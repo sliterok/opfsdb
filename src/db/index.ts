@@ -5,7 +5,17 @@ import { BPTree, SerializeStrategy, Comparator } from '../impl/bptree'
 import { decode, encode } from 'cbor-x'
 import { BPTreeCondition, BPTreeNode } from '../impl/bptree/BPTree'
 import { SerializeStrategyHead } from 'serializable-bptree'
-import { ICommandInput, ICreateTableInput, IQueryInput, IInsertInput, IDeleteInput, IReadInput, IDropInput, ICommandInputs } from './types'
+import {
+	ICommandInput,
+	ICreateTableInput,
+	IQueryInput,
+	IInsertInput,
+	IDeleteInput,
+	IReadInput,
+	IDropInput,
+	ICommandInputs,
+	IBasicRecord,
+} from './types'
 
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string) => {
 	try {
@@ -57,16 +67,19 @@ export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
 	}
 }
 
-export class OPFSDB<T extends Record<string, any>> {
+export class OPFSDB<T extends IBasicRecord> {
 	private trees: Record<string, BPTree<string, string | number>> = {}
 	private root!: FileSystemDirectoryHandle
 	private recordsRoot!: FileSystemDirectoryHandle
+	private keys?: Set<string>
 
 	constructor(
 		private tableName: string,
-		private keys?: (keyof T)[],
+		keys?: (keyof T)[],
 		private order = 5
-	) {}
+	) {
+		if (keys) this.keys = new Set(keys as string[])
+	}
 
 	async init() {
 		if (this.keys) {
@@ -87,10 +100,12 @@ export class OPFSDB<T extends Record<string, any>> {
 		}
 	}
 
-	async query(queries: Record<string, BPTreeCondition<string | number>>): Promise<T[]> {
+	async query(queries: {
+		[key in keyof T]?: BPTreeCondition<string | number>
+	}): Promise<T[]> {
 		const records: T[] = []
 		for (const key in queries) {
-			const queryRecords = await this.filterByKey(key, queries[key])
+			const queryRecords = await this.filterByKey(key, queries[key]!)
 			records.push(...queryRecords)
 		}
 		return records
@@ -172,7 +187,7 @@ export const dropCommand = ({ tableName }: IDropInput): Promise<void> => {
 	return tables[tableName].drop()
 }
 
-export const command = async <T extends Record<string, any>>(command: ICommandInputs) => {
+export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>) => {
 	try {
 		let response: T[]
 		switch (command.name) {
@@ -180,10 +195,10 @@ export const command = async <T extends Record<string, any>>(command: ICommandIn
 				await createTableCommand(command as ICreateTableInput)
 				break
 			case 'query':
-				response = await queryCommand<T>(command as IQueryInput)
+				response = await queryCommand<T>(command as IQueryInput<T>)
 				break
 			case 'insert':
-				await insertCommand(command as IInsertInput)
+				await insertCommand(command as IInsertInput<T>)
 				break
 			case 'delete':
 				await deleteCommand(command as IDeleteInput)

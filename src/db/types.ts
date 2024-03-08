@@ -1,14 +1,16 @@
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
 
-export interface IInsertInput {
+export interface IInsertInput<T extends IBasicRecord = IBasicRecord> {
 	name: 'insert'
 	tableName: string
-	record: Record<string, any>
+	record: T
 }
-export interface IQueryInput {
+export interface IQueryInput<T extends IBasicRecord = IBasicRecord> {
 	name: 'query'
 	tableName: string
-	query: Record<string, BPTreeCondition<string | number>>
+	query: {
+		[key in keyof T]?: BPTreeCondition<string | number>
+	}
 }
 export interface ICreateTableInput {
 	name: 'createTable'
@@ -32,8 +34,23 @@ export interface IDropInput {
 	tableName: string
 }
 
-export type ICommandInputs = ICreateTableInput | IQueryInput | IInsertInput | IDeleteInput | IReadInput | IDropInput
-export type ICommandInput<T> = Omit<T, 'name'>
-export type IFetchCommandInput<T> = Omit<T, 'tableName' | 'name'>
+export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
+	| ICreateTableInput
+	| IQueryInput<T>
+	| IInsertInput<T>
+	| IDeleteInput
+	| IReadInput
+	| IDropInput
+
+export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
+export type IFetchCommandInput<T extends ICommandInputs> = Omit<T, 'tableName' | 'name'>
 export type IFetchDbUrl<T extends ICommandInputs> = `/db/${string}/${T['name']}`
-export type IFetchDb = <T extends ICommandInputs>(url: IFetchDbUrl<T>, body: IFetchCommandInput<T>) => Promise<Record<string, any>[] | void>
+export type IFetchDb = <T extends ICommandInputs<J>, J extends IBasicRecord = IBasicRecord>(
+	url: IFetchDbUrl<T>,
+	body: IFetchCommandInput<T>
+) => Promise<J[] | void>
+
+export type IBasicRecord = {
+	id: string
+	[key: string]: any
+}

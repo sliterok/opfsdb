@@ -29,10 +29,10 @@ export default function MainLayout({ children }: LayoutProps) {
 		async () => {
 			if (typeof window === 'undefined') return []
 			// Fetch pokémon data from the Pokéapi
-			const users = await dbFetch<IQueryInput>(`/db/users/query`, {
+			const users = await dbFetch<IQueryInput<IUser>, IUser>(`/db/users/query`, {
 				query: {
 					name: {
-						equal: searchInput,
+						like: searchInput,
 					},
 				},
 			})
@@ -43,7 +43,7 @@ export default function MainLayout({ children }: LayoutProps) {
 
 	const createUser = useMutation(
 		async (record: IUser) => {
-			await dbFetch<IInsertInput>('/db/users/insert', {
+			await dbFetch<IInsertInput<IUser>>('/db/users/insert', {
 				record,
 			})
 		},
@@ -76,7 +76,7 @@ export default function MainLayout({ children }: LayoutProps) {
 						name: 'testUser3',
 						surname: 'test1',
 						index: 1,
-						id: 'test',
+						id: crypto.randomUUID(),
 					})
 				}}
 			>
@@ -84,7 +84,7 @@ export default function MainLayout({ children }: LayoutProps) {
 			</button>
 			<button onClick={() => usersQuery.refetch()}>refetch</button>
 			<input value={searchInput} onChange={e => setSearchInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && usersQuery.refetch()} />
-			<div style={{ display: 'flex' }}>
+			<div style={{ display: 'flex', flexWrap: 'wrap' }}>
 				{usersQuery.data.map((user, i) => (
 					<div key={i}>
 						<div>i: {i}</div>
