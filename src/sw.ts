@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
-import { ICommandInputs, command, createTableCommand, insertCommand } from './db/index'
+import { command, createTableCommand, insertCommand } from './db/index'
+import { ICommandInputs } from './db/types'
 
 async function init() {
 	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'index'] })

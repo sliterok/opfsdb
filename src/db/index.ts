@@ -5,6 +5,7 @@ import { BPTree, SerializeStrategy, Comparator } from '../impl/bptree'
 import { decode, encode } from 'cbor-x'
 import { BPTreeCondition, BPTreeNode } from '../impl/bptree/BPTree'
 import { SerializeStrategyHead } from 'serializable-bptree'
+import { ICommandInput, ICreateTableInput, IQueryInput, IInsertInput, IDeleteInput, IReadInput, IDropInput, ICommandInputs } from './types'
 
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string) => {
 	try {
@@ -59,6 +60,7 @@ export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
 export class OPFSDB<T extends Record<string, any>> {
 	private trees: Record<string, BPTree<string, string | number>> = {}
 	private root!: FileSystemDirectoryHandle
+	private recordsRoot!: FileSystemDirectoryHandle
 
 	constructor(
 		private tableName: string,
@@ -68,12 +70,12 @@ export class OPFSDB<T extends Record<string, any>> {
 
 	async init() {
 		if (this.keys) {
-			const root = await navigator.storage.getDirectory()
+			const globalRoot = await navigator.storage.getDirectory()
 
-			const dbDir = await root.getDirectoryHandle(this.tableName, { create: true })
-			this.root = await dbDir.getDirectoryHandle('records', { create: true })
+			this.root = await globalRoot.getDirectoryHandle(this.tableName, { create: true })
+			this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
 
-			const indexesDir = await dbDir.getDirectoryHandle('index', { create: true })
+			const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
 			for (const k of this.keys) {
 				const key = k as string
@@ -115,11 +117,11 @@ export class OPFSDB<T extends Record<string, any>> {
 	}
 
 	async read(id: string): Promise<T> {
-		return readFile(this.root, id)
+		return readFile(this.recordsRoot, id)
 	}
 
 	async insert(id: string, value: T) {
-		writeFile(this.root, id, value)
+		writeFile(this.recordsRoot, id, value)
 
 		for (const key in this.trees) {
 			const tree = this.trees[key]
@@ -133,17 +135,16 @@ export class OPFSDB<T extends Record<string, any>> {
 			const tree = this.trees[key]
 			await tree.delete(id, oldRecord[key])
 		}
-		await this.root.removeEntry(id)
+		await this.recordsRoot.removeEntry(id)
+	}
+
+	async drop() {
+		await this.root.removeEntry('records')
+		this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
 	}
 }
 
 const tables: Record<string, OPFSDB<any>> = {}
-
-export interface ICreateTableInput {
-	name: 'createTable'
-	tableName: string
-	keys: string[]
-}
 
 export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICreateTableInput>) => {
 	const table = new OPFSDB(tableName, keys)
@@ -151,67 +152,47 @@ export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICre
 	tables[tableName] = table
 }
 
-export interface IQueryInput {
-	name: 'query'
-	tableName: string
-	query: Record<string, BPTreeCondition<string | number>>
-}
-
 export const queryCommand = <T>({ tableName, query }: ICommandInput<IQueryInput>): Promise<T[]> => {
 	return tables[tableName].query(query)
-}
-
-export interface IInsertInput {
-	name: 'insert'
-	tableName: string
-	record: Record<string, any>
 }
 
 export const insertCommand = async ({ tableName, record }: ICommandInput<IInsertInput>): Promise<void> => {
 	await tables[tableName].insert(record.id, record)
 }
 
-export interface IDeleteInput {
-	name: 'delete'
-	tableName: string
-	id: string
-}
-
 export const deleteCommand = async ({ tableName, id }: ICommandInput<IDeleteInput>): Promise<void> => {
 	await tables[tableName].delete(id)
-}
-
-export interface IReadInput {
-	name: 'read'
-	tableName: string
-	id: string
 }
 
 export const readCommand = <T>({ tableName, id }: IReadInput): Promise<T[]> => {
 	return tables[tableName].read(id)
 }
 
-export type ICommandInputs = ICreateTableInput | IQueryInput | IInsertInput | IDeleteInput | IReadInput
-export type ICommandInput<T> = Omit<T, 'name'>
+export const dropCommand = ({ tableName }: IDropInput): Promise<void> => {
+	return tables[tableName].drop()
+}
 
 export const command = async <T extends Record<string, any>>(command: ICommandInputs) => {
 	try {
 		let response: T[]
 		switch (command.name) {
 			case 'createTable':
-				createTableCommand(command as ICreateTableInput)
+				await createTableCommand(command as ICreateTableInput)
 				break
 			case 'query':
 				response = await queryCommand<T>(command as IQueryInput)
 				break
 			case 'insert':
-				insertCommand(command as IInsertInput)
+				await insertCommand(command as IInsertInput)
 				break
 			case 'delete':
-				deleteCommand(command as IDeleteInput)
+				await deleteCommand(command as IDeleteInput)
 				break
 			case 'read':
 				response = await readCommand(command as IReadInput)
+				break
+			case 'drop':
+				await dropCommand(command as IDropInput)
 				break
 			default:
 				throw new Error('unknown command')
