@@ -1,18 +1,11 @@
 /// <reference lib="webworker" />
 
-import { command, createTableCommand, insertCommand } from './db/index'
+import { command, createTableCommand, dropCommand } from './db/index'
 import { ICommandInputs } from './db/types'
 
 async function init() {
-	await createTableCommand({ tableName: 'users', keys: ['name', 'surname'] })
-	await insertCommand({
-		tableName: 'users',
-		record: {
-			name: 'first',
-			surname: 'user',
-			id: crypto.randomUUID(),
-		},
-	})
+	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
+	// await dropCommand({ tableName: 'users' })
 }
 
 init()

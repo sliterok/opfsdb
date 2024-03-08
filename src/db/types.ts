@@ -8,8 +8,9 @@ export interface IInsertInput<T extends IBasicRecord = IBasicRecord> {
 export interface IQueryInput<T extends IBasicRecord = IBasicRecord> {
 	name: 'query'
 	tableName: string
-	query: {
-		[key in keyof T]?: BPTreeCondition<string | number>
+	query: //Record<keyof T, BPTreeCondition<string | number> | never>
+	{
+		[key in keyof T]?: BPTreeCondition<string | number> | never
 	}
 }
 export interface ICreateTableInput {

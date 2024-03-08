@@ -115,20 +115,20 @@ export class OPFSDB<T extends IBasicRecord> {
 		const tree = this.trees[key]
 		if (!tree) throw new Error('No such index found')
 
-		const indexes = await tree.where(query)
+		const indexes = Array.from(await tree.keys(query))
 		const records = Array(indexes.length)
 		for (let i = 0; i < indexes.length; i++) {
-			records[i] = await this.read(indexes[i].key)
+			records[i] = await this.read(indexes[i])
 		}
 		return records
 	}
 
-	async getByKey(key: string, query: BPTreeCondition<string | number>): Promise<T> {
+	async getByKey(key: string, query: BPTreeCondition<string | number>): Promise<T | void> {
 		const tree = this.trees[key]
 		if (!tree) throw new Error('No such index found')
 
-		const [index] = await tree.where(query)
-		return await this.read(index.key)
+		const [index] = await tree.keys(query)
+		return index ? await this.read(index) : undefined
 	}
 
 	async read(id: string): Promise<T> {
@@ -154,8 +154,10 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async drop() {
-		await this.root.removeEntry('records')
+		await this.root.removeEntry('records', { recursive: true })
+		await this.root.removeEntry('index', { recursive: true })
 		this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
+		await this.root.getDirectoryHandle('index', { create: true })
 	}
 }
 
@@ -179,11 +181,11 @@ export const deleteCommand = async ({ tableName, id }: ICommandInput<IDeleteInpu
 	await tables[tableName].delete(id)
 }
 
-export const readCommand = <T>({ tableName, id }: IReadInput): Promise<T[]> => {
+export const readCommand = <T>({ tableName, id }: ICommandInput<IReadInput>): Promise<T[]> => {
 	return tables[tableName].read(id)
 }
 
-export const dropCommand = ({ tableName }: IDropInput): Promise<void> => {
+export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<void> => {
 	return tables[tableName].drop()
 }
 
