@@ -4,14 +4,13 @@ import { command, createTableCommand, insertCommand } from './db/index'
 import { ICommandInputs } from './db/types'
 
 async function init() {
-	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'index'] })
+	await createTableCommand({ tableName: 'users', keys: ['name', 'surname'] })
 	await insertCommand({
 		tableName: 'users',
 		record: {
-			name: 'test',
-			surname: 'testovich',
-			index: 0,
-			id: '123',
+			name: 'first',
+			surname: 'user',
+			id: crypto.randomUUID(),
 		},
 	})
 }
