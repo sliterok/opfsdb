@@ -131,7 +131,7 @@ export default function MainLayout() {
 						{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
 						{ headerName: 'address', field: 'address', filter: true },
 					]}
-					rowData={usersQuery.data}
+					rowData={usersQuery.data || []}
 					onFilterModified={e => {
 						const key = e.column.getColId() as keyof IUser
 						const model = e.filterInstance.getModel()
