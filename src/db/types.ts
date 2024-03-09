@@ -5,21 +5,25 @@ export interface IBaseInput {
 	tableName: string
 }
 
-export interface IInsertOptions extends IBaseInput {
+export interface IInsertOptions {
 	fullRecord?: boolean
 }
-export interface IInsertInput<T extends IBasicRecord = IBasicRecord> extends IInsertOptions {
+export interface IInsertInput<T extends IBasicRecord = IBasicRecord> extends IInsertOptions, IBaseInput {
 	name: 'insert'
 	record: T
 }
-export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput {
+
+export interface IQueryOptions {
+	isAnd?: boolean
+	limit?: number
+}
+
+export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput, IQueryOptions {
 	name: 'query'
-	tableName: string
 	query: //Record<keyof T, BPTreeCondition<string | number> | never>
 	{
 		[key in keyof T]?: BPTreeCondition<string | number> | never
 	}
-	isAnd?: boolean
 }
 export interface ICreateTableInput extends IBaseInput {
 	name: 'createTable'

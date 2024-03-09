@@ -21,6 +21,7 @@ const columnDefs: AgGridReactProps['columnDefs'] = [
 ]
 
 export default function MainLayout() {
+	const [limit, setLimit] = useState(50)
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')
 	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
@@ -38,6 +39,7 @@ export default function MainLayout() {
 						},
 					},
 					isAnd: isAndQuery,
+					limit,
 				}
 				const users = await dbFetch<IQueryInput<IUser>, IUser>(`/db/users/query`, queryInput ? deepmerge(query, queryInput) : query)
 				return users as IUser[]
@@ -64,7 +66,7 @@ export default function MainLayout() {
 	useEffect(() => {
 		const delayDebounceFn = setTimeout(() => {
 			usersQuery.refetch()
-		}, 600)
+		}, 60)
 
 		return () => clearTimeout(delayDebounceFn)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,6 +75,9 @@ export default function MainLayout() {
 	return (
 		<>
 			<div style={{ height: '10svh', display: 'flex', gap: '1em' }}>
+				<div>
+					<button onClick={() => usersQuery.refetch()}>refetch</button>
+				</div>
 				<div>
 					<button
 						onClick={() => {
@@ -89,9 +94,7 @@ export default function MainLayout() {
 					</button>
 				</div>
 				<div>
-					<button onClick={() => usersQuery.refetch()}>refetch</button>
-				</div>
-				<div>
+					<div>search name</div>
 					<input
 						value={searchInput}
 						onChange={e => setSearchInput(e.target.value)}
@@ -99,7 +102,16 @@ export default function MainLayout() {
 					/>
 				</div>
 				<div>
-					and
+					<div>Limit</div>
+					<input
+						type="number"
+						value={limit}
+						onChange={e => setLimit(e.target.valueAsNumber)}
+						onKeyDown={e => e.key === 'Enter' && usersQuery.refetch()}
+					/>
+				</div>
+				<div>
+					<div>and</div>
 					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
 			</div>

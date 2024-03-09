@@ -16,6 +16,7 @@ import {
 	ICommandInputs,
 	IBasicRecord,
 	IEncoder,
+	IQueryOptions,
 } from './types'
 
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder) => {
@@ -119,7 +120,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		queries: {
 			[key in keyof T]?: BPTreeCondition<string | number>
 		},
-		isAnd?: boolean
+		options?: IQueryOptions
 	): Promise<T[]> {
 		let indexes = new Set<string>()
 		for (const key in queries) {
@@ -128,10 +129,15 @@ export class OPFSDB<T extends IBasicRecord> {
 
 			const query = queries[key]!
 			const queryIndexes = await tree.keys(query)
-			if (isAnd) {
+			if (options?.isAnd) {
 				indexes = indexes.size ? new Set([...indexes].filter(el => queryIndexes.has(el))) : queryIndexes
 			} else {
 				indexes = new Set([...indexes, ...queryIndexes])
+			}
+
+			if (options?.limit && indexes.size > options?.limit) {
+				indexes = new Set([...indexes].slice(0, options.limit))
+				break
 			}
 		}
 		const indexArray = Array.from(indexes)
@@ -224,8 +230,8 @@ export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICre
 	tables[tableName] = table
 }
 
-export const queryCommand = <T>({ tableName, query, isAnd }: ICommandInput<IQueryInput>): Promise<T[]> => {
-	return tables[tableName].query(query, isAnd)
+export const queryCommand = <T>({ tableName, query, ...options }: ICommandInput<IQueryInput>): Promise<T[]> => {
+	return tables[tableName].query(query, options as IQueryOptions)
 }
 
 export const insertCommand = async ({ tableName, record, fullRecord }: ICommandInput<IInsertInput>): Promise<void> => {
