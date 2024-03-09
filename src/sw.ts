@@ -1,6 +1,9 @@
 /// <reference lib="webworker" />
 
-import { command, createTableCommand, dropCommand } from './db/index'
+import {
+	command,
+	createTableCommand, //dropCommand
+} from './db/index'
 import { ICommandInputs } from './db/types'
 
 async function init() {

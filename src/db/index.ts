@@ -100,13 +100,29 @@ export class OPFSDB<T extends IBasicRecord> {
 		}
 	}
 
-	async query(queries: {
-		[key in keyof T]?: BPTreeCondition<string | number>
-	}): Promise<T[]> {
-		const records: T[] = []
+	async query(
+		queries: {
+			[key in keyof T]?: BPTreeCondition<string | number>
+		},
+		isAnd?: boolean
+	): Promise<T[]> {
+		let indexes = new Set<string>()
 		for (const key in queries) {
-			const queryRecords = await this.filterByKey(key, queries[key]!)
-			records.push(...queryRecords)
+			const tree = this.trees[key]
+			if (!tree) throw new Error('No such index found')
+
+			const query = queries[key]!
+			const queryIndexes = await tree.keys(query)
+			if (isAnd) {
+				indexes = indexes.size ? new Set([...indexes].filter(el => queryIndexes.has(el))) : queryIndexes
+			} else {
+				indexes = new Set([...indexes, ...queryIndexes])
+			}
+		}
+		const indexArray = Array.from(indexes)
+		const records: T[] = Array(indexes.size)
+		for (let i = 0; i < indexes.size; i++) {
+			records[i] = await this.read(indexArray[i])
 		}
 		return records
 	}
@@ -135,20 +151,46 @@ export class OPFSDB<T extends IBasicRecord> {
 		return readFile(this.recordsRoot, id)
 	}
 
-	async insert(id: string, value: T) {
-		writeFile(this.recordsRoot, id, value)
+	async insert(id: string, value: T, fullRecord?: boolean) {
+		const oldRecord = await this.read(id)
 
-		for (const key in this.trees) {
-			const tree = this.trees[key]
-			await tree.insert(id, value[key])
+		await writeFile(this.recordsRoot, id, value)
+
+		if (!oldRecord) {
+			for (const key in this.trees) {
+				const val = value[key]
+				if (val === undefined || val === null) continue
+				const tree = this.trees[key]
+				await tree.insert(id, val)
+			}
+		} else {
+			for (const key in this.trees) {
+				const newValue = value[key]
+				const oldValue = oldRecord[key]
+
+				const added: boolean = !oldValue && newValue
+				if (!added) continue
+				const updated: boolean = oldValue !== newValue
+				if (!updated) continue
+				const deleted: boolean = fullRecord && oldValue && !newValue
+				if (!deleted) continue
+
+				const tree = this.trees[key]
+				if (updated || deleted) {
+					await tree.delete(id, oldValue)
+				}
+				if (!deleted) await tree.insert(id, newValue)
+			}
 		}
 	}
 
 	async delete(id: string, oldRecord?: T) {
 		if (!oldRecord) oldRecord = await this.read(id)
 		for (const key in this.trees) {
+			const val = oldRecord[key]
+			if (val === undefined || val === null) continue
 			const tree = this.trees[key]
-			await tree.delete(id, oldRecord[key])
+			await tree.delete(id, val)
 		}
 		await this.recordsRoot.removeEntry(id)
 	}
@@ -169,12 +211,12 @@ export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICre
 	tables[tableName] = table
 }
 
-export const queryCommand = <T>({ tableName, query }: ICommandInput<IQueryInput>): Promise<T[]> => {
-	return tables[tableName].query(query)
+export const queryCommand = <T>({ tableName, query, isAnd }: ICommandInput<IQueryInput>): Promise<T[]> => {
+	return tables[tableName].query(query, isAnd)
 }
 
-export const insertCommand = async ({ tableName, record }: ICommandInput<IInsertInput>): Promise<void> => {
-	await tables[tableName].insert(record.id, record)
+export const insertCommand = async ({ tableName, record, fullRecord }: ICommandInput<IInsertInput>): Promise<void> => {
+	await tables[tableName].insert(record.id, record, fullRecord)
 }
 
 export const deleteCommand = async ({ tableName, id }: ICommandInput<IDeleteInput>): Promise<void> => {

@@ -28,10 +28,13 @@
   "dependencies": {
     "@hattip/response": "0.0.42",
     "@types/chance": "^1.1.6",
+    "@types/deepmerge": "^2.2.0",
     "ag-grid-community": "^31.1.1",
     "ag-grid-react": "^31.1.1",
     "cbor-x": "^1.5.8",
     "chance": "^1.1.11",
+    "deep-object-diff": "^1.1.9",
+    "deepmerge": "^4.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "serializable-bptree": "^2.0.0",

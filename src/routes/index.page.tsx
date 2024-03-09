@@ -11,10 +11,12 @@ import Chance from 'chance'
 // 		})
 // }
 import { AgGridReact } from 'ag-grid-react'
-
 import 'ag-grid-community/styles//ag-grid.css'
 import 'ag-grid-community/styles//ag-theme-quartz.css'
-import { BPTreeCondition } from 'src/impl/bptree/BPTree'
+import deepmerge from 'deepmerge'
+import { getQueryFromCondition } from 'src/db/helpers'
+import { diff } from 'deep-object-diff'
+
 const chance = new Chance()
 async function initWorker() {
 	// eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
@@ -27,28 +29,25 @@ async function initWorker() {
 
 initWorker()
 export default function MainLayout() {
+	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')
 	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
 
 	const usersQuery = useQuery(
-		`users:${typeof window}`,
+		`users:${typeof window}:${isAndQuery}`,
 		async () => {
 			if (typeof window === 'undefined') return []
 			// Fetch pokémon data from the Pokéapi
 			try {
-				const users = await dbFetch<IQueryInput<IUser>, IUser>(
-					`/db/users/query`,
-					Object.assign(
-						{
-							query: {
-								name: {
-									like: '%' + searchInput + '%',
-								},
-							},
+				const query = {
+					query: {
+						name: {
+							like: '%' + searchInput + '%',
 						},
-						queryInput
-					)
-				)
+					},
+					isAnd: isAndQuery,
+				}
+				const users = await dbFetch<IQueryInput<IUser>, IUser>(`/db/users/query`, queryInput ? deepmerge(query, queryInput) : query)
 				return users as IUser[]
 			} catch (error) {
 				console.error(error)
@@ -112,6 +111,10 @@ export default function MainLayout() {
 						onKeyDown={e => e.key === 'Enter' && usersQuery.refetch()}
 					/>
 				</div>
+				<div>
+					and
+					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
+				</div>
 			</div>
 			<div
 				className="ag-theme-quartz"
@@ -122,43 +125,46 @@ export default function MainLayout() {
 			>
 				<AgGridReact
 					columnDefs={[
-						{ headerName: 'Name', field: 'name', filter: true },
-						{ headerName: 'Surname', field: 'surname', filter: true },
 						{ headerName: 'ID', field: 'id', filter: true },
-						{ headerName: 'address', field: 'address', filter: true },
+						{ headerName: 'Prefix', field: 'surname', filter: true },
+						{ headerName: 'Name', field: 'name', filter: true },
 						{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
+						{ headerName: 'address', field: 'address', filter: true },
 					]}
 					rowData={usersQuery.data}
 					onFilterModified={e => {
 						const key = e.column.getColId() as keyof IUser
 						const model = e.filterInstance.getModel()
 						if (!model) return
-						let val = model.filter
-						let op: keyof BPTreeCondition<any> | void = undefined
-						switch (model.type) {
-							case 'equals':
-								op = 'equal'
-								break
-							case 'contains':
-								op = 'like'
-								val = `%${val}%`
-								break
-							default:
-								break
+						let query: IQueryInput<IUser>['query'] | void = undefined
+
+						if (model.operator === 'AND') {
+							query = {
+								[key]: deepmerge.all(
+									model.conditions.map((condition: { type: string; filter: string }) =>
+										getQueryFromCondition(condition.type, condition.filter)
+									)
+								),
+							}
+						} else if (model.operator !== 'OR') {
+							const q = getQueryFromCondition(model.type, model.filter)
+							query = {
+								[key]: q,
+							}
 						}
 
-						if (op) {
+						if (query?.[key]) {
 							setQueryInput(old => {
-								if (old?.query?.[key]?.[op!] === val) return old
 								const upd = {
 									tableName: 'users',
 									query: {
 										...old?.query,
-										[key]: {
-											[op!]: val,
-										},
+										...query,
 									},
 								}
+								const diffed = old?.query && diff(old, upd)
+								if (diffed && !Object.keys(diffed).length) return old
+								// console.log(diffed)
 								return upd
 							})
 						}

@@ -1,38 +1,41 @@
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
 
-export interface IInsertInput<T extends IBasicRecord = IBasicRecord> {
-	name: 'insert'
+export interface IBaseInput {
 	tableName: string
+}
+
+export interface IInsertOptions extends IBaseInput {
+	fullRecord?: boolean
+}
+export interface IInsertInput<T extends IBasicRecord = IBasicRecord> extends IInsertOptions {
+	name: 'insert'
 	record: T
 }
-export interface IQueryInput<T extends IBasicRecord = IBasicRecord> {
+export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput {
 	name: 'query'
 	tableName: string
 	query: //Record<keyof T, BPTreeCondition<string | number> | never>
 	{
 		[key in keyof T]?: BPTreeCondition<string | number> | never
 	}
+	isAnd?: boolean
 }
-export interface ICreateTableInput {
+export interface ICreateTableInput extends IBaseInput {
 	name: 'createTable'
-	tableName: string
 	keys: string[]
 }
-export interface IDeleteInput {
+export interface IDeleteInput extends IBaseInput {
 	name: 'delete'
-	tableName: string
 	id: string
 }
 
-export interface IReadInput {
+export interface IReadInput extends IBaseInput {
 	name: 'read'
-	tableName: string
 	id: string
 }
 
-export interface IDropInput {
+export interface IDropInput extends IBaseInput {
 	name: 'drop'
-	tableName: string
 }
 
 export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
