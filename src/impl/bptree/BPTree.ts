@@ -337,13 +337,16 @@ export class BPTree<K, V> {
 		value: V,
 		startNode: BPTreeLeafNode<K, V>,
 		fullSearch: boolean,
-		comparator: (nodeValue: V, value: V) => boolean
+		comparator: (nodeValue: V, value: V) => boolean,
+		limit?: number
 	): Promise<BPTreePair<K, V>[]> {
 		const pairs = []
 		let node = startNode
 		let done = false
 		let found = false
-		while (!done) {
+		let count = 0
+
+		while (!done && (!limit || count < limit)) {
 			let i = node.values.length
 			while (i--) {
 				const nValue = node.values[i]
@@ -353,6 +356,7 @@ export class BPTree<K, V> {
 					let j = keys.length
 					while (j--) {
 						pairs.push({ key: keys[j], value: nValue })
+						count++
 					}
 				} else if (found && !fullSearch) {
 					done = true
@@ -372,13 +376,16 @@ export class BPTree<K, V> {
 		value: V,
 		startNode: BPTreeLeafNode<K, V>,
 		fullSearch: boolean,
-		comparator: (nodeValue: V, value: V) => boolean
+		comparator: (nodeValue: V, value: V) => boolean,
+		limit?: number
 	): Promise<BPTreePair<K, V>[]> {
 		const pairs = []
 		let node = startNode
 		let done = false
 		let found = false
-		while (!done) {
+		let count = 0
+
+		while (!done && (!limit || count < limit)) {
 			for (let i = 0, len = node.values.length; i < len; i++) {
 				const nValue = node.values[i]
 				const keys = node.keys[i]
@@ -386,6 +393,7 @@ export class BPTree<K, V> {
 					found = true
 					for (const key of keys) {
 						pairs.push({ key, value: nValue })
+						count++
 					}
 				} else if (found && !fullSearch) {
 					done = true
@@ -406,13 +414,14 @@ export class BPTree<K, V> {
 		startNode: BPTreeLeafNode<K, V>,
 		fullSearch: boolean,
 		comparator: (nodeValue: V, value: V) => boolean,
-		direction: -1 | 1
+		direction: -1 | 1,
+		limit?: number
 	): Promise<BPTreePair<K, V>[]> {
 		switch (direction) {
 			case -1:
-				return await this._getPairsRightToLeft(value, startNode, fullSearch, comparator)
+				return await this._getPairsRightToLeft(value, startNode, fullSearch, comparator, limit)
 			case +1:
-				return await this._getPairsLeftToRight(value, startNode, fullSearch, comparator)
+				return await this._getPairsLeftToRight(value, startNode, fullSearch, comparator, limit)
 			default:
 				throw new Error(`Direction must be -1 or 1. but got a ${direction}`)
 		}
@@ -424,7 +433,7 @@ export class BPTree<K, V> {
 	 * This method operates much faster than first searching with `where` and then retrieving only the key list.
 	 * @param condition You can use the `gt`, `lt`, `gte`, `lte`, `equal`, `notEqual`, `like` condition statements.
 	 */
-	async keys(condition: BPTreeCondition<V>): Promise<Set<K>> {
+	async keys(condition: BPTreeCondition<V>, limit?: number): Promise<Set<K>> {
 		let result: K[] | null = null
 		for (const k in condition) {
 			const key = k as keyof BPTreeCondition<V>
@@ -433,7 +442,7 @@ export class BPTree<K, V> {
 			const direction = this._verifierDirection[key]
 			const fullSearch = this._verifierFullSearch[key]
 			const comparator = this._verifierMap[key]
-			const pairs = await this.getPairs(value, startNode, fullSearch, comparator, direction)
+			const pairs = await this.getPairs(value, startNode, fullSearch, comparator, direction, limit)
 			if (result === null) {
 				result = pairs.map(pair => pair.key)
 			} else {

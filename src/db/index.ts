@@ -161,7 +161,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			if (!tree) throw new Error('No such index found')
 
 			const query = queries[key]!
-			const queryIndexes = await tree.keys(query)
+			const queryIndexes = await tree.keys(query, options?.limit)
 			if (options?.isAnd) {
 				indexes = indexes.size ? new Set([...indexes].filter(el => queryIndexes.has(el))) : queryIndexes
 			} else {
