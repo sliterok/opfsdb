@@ -2,9 +2,7 @@ import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
 import { ICommandInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { IUser } from 'src/types'
-
 import Chance from 'chance'
-
 import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
 import 'ag-grid-community/styles//ag-grid.css'
 import 'ag-grid-community/styles//ag-theme-quartz.css'
@@ -31,7 +29,7 @@ export default function MainLayout() {
 		`users:${typeof window}:${isAndQuery}`,
 		async () => {
 			if (typeof window === 'undefined') return []
-			// Fetch pokémon data from the Pokéapi
+
 			try {
 				const query = {
 					query: {
@@ -71,12 +69,7 @@ export default function MainLayout() {
 		return () => clearTimeout(delayDebounceFn)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [searchInput, queryInput])
-	// const { result, error } = useWorker<IQueryInput, IUser[]>(createWorker, { name: 'query', tableName: 'users', query: { name: { equal: 'test' } } })
-	// useWorker<IInsertInput, void>(createWorker, {
-	// 	name: 'insert',
-	// 	tableName: 'users',
-	// 	record: { name: 'test', surname: 'testovich', index: 0, id: 'first' },
-	// })
+
 	return (
 		<>
 			<div style={{ height: '10svh', display: 'flex', gap: '1em' }}>
