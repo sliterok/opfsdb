@@ -168,7 +168,7 @@ export class OPFSDB<T extends IBasicRecord> {
 				indexes = new Set([...indexes, ...queryIndexes])
 			}
 
-			if (options?.limit && indexes.size > options?.limit) {
+			if (!options?.isAnd && options?.limit && indexes.size > options?.limit) {
 				indexes = new Set([...indexes].slice(0, options.limit))
 				break
 			}

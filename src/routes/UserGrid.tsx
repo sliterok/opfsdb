@@ -76,16 +76,15 @@ export default function MainLayout() {
 	})
 
 	const importUsers = useMutation(async () => {
-		for (let i = 0; i < 15; i++) {
-			const records = Array(50)
+		for (let i = 0; i < 10; i++) {
+			const records = Array(1000)
 				.fill(true)
 				.map(() => generateUser())
 			// eslint-disable-next-line no-console
-			console.log(i)
+			console.log(i * 1000)
 			await dbFetch<IImportInput<IUser>>('/db/users/import', {
 				records,
 			})
-			await new Promise(res => setTimeout(res, 20))
 		}
 	})
 
