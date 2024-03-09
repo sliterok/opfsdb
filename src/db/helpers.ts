@@ -5,7 +5,10 @@ const swFailCodes = new Set([501, 405])
 
 export const dbFetch: IFetchDb = async (url, body) => {
 	const response = await fetch(url, { body: JSON.stringify(body), method: 'POST' })
-	if (swFailCodes.has(response.status)) return
+	if (response.status !== 200) {
+		if (swFailCodes.has(response.status)) console.warn('service worker wasnt registered at db query, retry')
+		return
+	}
 	return response.json()
 }
 
