@@ -1,4 +1,4 @@
-import { PrerenderResult, useMutation, useQuery } from 'rakkasjs'
+import { ClientSuspense, PrerenderResult, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
 import { ICommandInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { dbFetch } from 'src/helpers'
@@ -10,7 +10,7 @@ import Chance from 'chance'
 // 			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
 // 		})
 // }
-import { AgGridReact } from 'ag-grid-react'
+import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
 import 'ag-grid-community/styles//ag-grid.css'
 import 'ag-grid-community/styles//ag-theme-quartz.css'
 import deepmerge from 'deepmerge'
@@ -26,6 +26,14 @@ async function initWorker() {
 		})
 	}
 }
+
+const columnDefs: AgGridReactProps['columnDefs'] = [
+	{ headerName: 'ID', field: 'id', filter: true },
+	{ headerName: 'Prefix', field: 'surname', filter: true },
+	{ headerName: 'Name', field: 'name', filter: true },
+	{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
+	{ headerName: 'address', field: 'address', filter: true },
+]
 
 initWorker()
 export default function MainLayout() {
@@ -116,74 +124,59 @@ export default function MainLayout() {
 					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
 			</div>
-			<div
-				className="ag-theme-quartz"
-				style={{
-					height: '90svh',
-					width: '100%',
-				}}
-			>
-				<AgGridReact
-					columnDefs={[
-						{ headerName: 'ID', field: 'id', filter: true },
-						{ headerName: 'Prefix', field: 'surname', filter: true },
-						{ headerName: 'Name', field: 'name', filter: true },
-						{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
-						{ headerName: 'address', field: 'address', filter: true },
-					]}
-					rowData={usersQuery.data || []}
-					onFilterModified={e => {
-						const key = e.column.getColId() as keyof IUser
-						const model = e.filterInstance.getModel()
-						if (!model) return
-						let query: IQueryInput<IUser>['query'] | void = undefined
+			<ClientSuspense fallback="Loading grid...">
+				{
+					<div
+						className="ag-theme-quartz"
+						style={{
+							height: '90svh',
+							width: '100%',
+						}}
+					>
+						<AgGridReact
+							columnDefs={columnDefs}
+							rowData={usersQuery.data || []}
+							onFilterModified={e => {
+								const key = e.column.getColId() as keyof IUser
+								const model = e.filterInstance.getModel()
+								if (!model) return
+								let query: IQueryInput<IUser>['query'] | void = undefined
 
-						if (model.operator === 'AND') {
-							query = {
-								[key]: deepmerge.all(
-									model.conditions.map((condition: { type: string; filter: string }) =>
-										getQueryFromCondition(condition.type, condition.filter)
-									)
-								),
-							}
-						} else if (model.operator !== 'OR') {
-							const q = getQueryFromCondition(model.type, model.filter)
-							query = {
-								[key]: q,
-							}
-						}
-
-						if (query?.[key]) {
-							setQueryInput(old => {
-								const upd = {
-									tableName: 'users',
-									query: {
-										...old?.query,
-										...query,
-									},
+								if (model.operator === 'AND') {
+									query = {
+										[key]: deepmerge.all(
+											model.conditions.map((condition: { type: string; filter: string }) =>
+												getQueryFromCondition(condition.type, condition.filter)
+											)
+										),
+									}
+								} else if (model.operator !== 'OR') {
+									const q = getQueryFromCondition(model.type, model.filter)
+									query = {
+										[key]: q,
+									}
 								}
-								const diffed = old?.query && diff(old, upd)
-								if (diffed && !Object.keys(diffed).length) return old
-								// console.log(diffed)
-								return upd
-							})
-						}
-					}}
-				></AgGridReact>
-			</div>
-			{/* <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1em', flexDirection: 'column' }}>
-				{usersQuery.data?.map((user, i) => (
-					<div key={i} style={{ display: 'flex', gap: '1em' }}>
-						<div>[{i}]</div>
-						<div>{user.id.slice(0, 6)}</div>
-						<div>
-							{user.surname} {user.name}
-						</div>
-						<div>{user.itemsBought}</div>
-						<div>{user.address}</div>
+
+								if (query?.[key]) {
+									setQueryInput(old => {
+										const upd = {
+											tableName: 'users',
+											query: {
+												...old?.query,
+												...query,
+											},
+										}
+										const diffed = old?.query && diff(old, upd)
+										if (diffed && !Object.keys(diffed).length) return old
+										// console.log(diffed)
+										return upd
+									})
+								}
+							}}
+						></AgGridReact>
 					</div>
-				))}
-			</div> */}
+				}
+			</ClientSuspense>
 		</>
 	)
 }
