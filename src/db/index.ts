@@ -2,7 +2,7 @@
 /* eslint-disable ssr-friendly/no-dom-globals-in-module-scope */
 
 import { BPTree, SerializeStrategy, Comparator } from '../impl/bptree'
-import { decode, encode } from 'cbor-x'
+import { decode, encode, Encoder } from 'cbor-x'
 import { BPTreeCondition, BPTreeNode } from '../impl/bptree/BPTree'
 import { SerializeStrategyHead } from 'serializable-bptree'
 import {
@@ -15,24 +15,30 @@ import {
 	IDropInput,
 	ICommandInputs,
 	IBasicRecord,
+	IEncoder,
 } from './types'
 
-const readFile = async (dir: FileSystemDirectoryHandle, fileName: string) => {
+const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder) => {
 	try {
 		const fileHandle = await dir.getFileHandle(fileName)
 		const file: Blob = await fileHandle.getFile()
 		const buffer = await file.arrayBuffer()
-		return decode(new Uint8Array(buffer))
+		if (encoder) {
+			const tag = encoder.decode(new Uint8Array(buffer))
+			return encoder.decodeKeys(tag)
+		} else {
+			return decode(new Uint8Array(buffer))
+		}
 	} catch (error) {
 		console.error('error reading: ', error)
 		return null
 	}
 }
 
-const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any>) => {
+const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any>, encoder?: IEncoder) => {
 	const fileHandle = await dir.getFileHandle(fileName, { create: true })
 	const writeHandle = await fileHandle.createWritable()
-	const encoded = encode(data)
+	const encoded = encoder ? encoder.encode(data) : encode(data)
 	await writeHandle.write(encoded)
 	await writeHandle.close()
 }
@@ -40,7 +46,8 @@ const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data:
 export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
 	constructor(
 		order: number,
-		private root: FileSystemDirectoryHandle
+		private root: FileSystemDirectoryHandle,
+		private encoder: IEncoder
 	) {
 		super(order)
 	}
@@ -51,19 +58,19 @@ export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
 	}
 
 	read(id: number): Promise<BPTreeNode<K, V>> {
-		return readFile(this.root, id.toString())
+		return readFile(this.root, id?.toString() || 'root', this.encoder)
 	}
 
 	write(id: number, node: BPTreeNode<K, V>): Promise<void> {
-		return writeFile(this.root, id.toString(), node)
+		return writeFile(this.root, id?.toString() || 'root', node, this.encoder)
 	}
 
 	async readHead(): Promise<SerializeStrategyHead | null> {
-		return readFile(this.root, 'head')
+		return readFile(this.root, 'head', this.encoder)
 	}
 
 	async writeHead(head: SerializeStrategyHead): Promise<void> {
-		return writeFile(this.root, 'head', head)
+		return writeFile(this.root, 'head', head, this.encoder)
 	}
 }
 
@@ -71,6 +78,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	private trees: Record<string, BPTree<string, string | number>> = {}
 	private root!: FileSystemDirectoryHandle
 	private recordsRoot!: FileSystemDirectoryHandle
+	private encoder!: IEncoder
 	private keys?: Set<string>
 
 	constructor(
@@ -82,18 +90,25 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async init() {
+		const globalRoot = await navigator.storage.getDirectory()
+		this.root = await globalRoot.getDirectoryHandle(this.tableName, { create: true })
+		this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
+
+		const { structures = [] } = await readFile(this.root, 'structures.cbor')
+		this.encoder = new Encoder({
+			saveStructures: structures => {
+				writeFile(this.root, 'structures.cbor', structures)
+			},
+			structures,
+		}) as IEncoder
+
 		if (this.keys) {
-			const globalRoot = await navigator.storage.getDirectory()
-
-			this.root = await globalRoot.getDirectoryHandle(this.tableName, { create: true })
-			this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
-
 			const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
 			for (const k of this.keys) {
 				const key = k as string
 				const indexDir = await indexesDir.getDirectoryHandle(key, { create: true })
-				const tree = new BPTree(new FileStoreStrategy<string, string>(this.order, indexDir), new Comparator())
+				const tree = new BPTree(new FileStoreStrategy<string, string>(this.order, indexDir, this.encoder), new Comparator())
 				await tree.init()
 				this.trees[key as string] = tree
 			}
@@ -148,13 +163,13 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async read(id: string): Promise<T> {
-		return readFile(this.recordsRoot, id)
+		return readFile(this.recordsRoot, id, this.encoder)
 	}
 
 	async insert(id: string, value: T, fullRecord?: boolean) {
 		const oldRecord = await this.read(id)
 
-		await writeFile(this.recordsRoot, id, value)
+		await writeFile(this.recordsRoot, id, value, this.encoder)
 
 		if (!oldRecord) {
 			for (const key in this.trees) {
@@ -257,6 +272,7 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 
 		return new Response(JSON.stringify(response!), { status: 200 })
 	} catch (error) {
+		console.error(command.name, error)
 		return new Response(null, { status: 500, statusText: (error as Error).message })
 	}
 }

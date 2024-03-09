@@ -1,3 +1,4 @@
+import { Encoder } from 'cbor-x'
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
 
 export interface IBaseInput {
@@ -57,4 +58,8 @@ export type IFetchDb = <T extends ICommandInputs<J>, J extends IBasicRecord = IB
 export type IBasicRecord = {
 	id: string
 	[key: string]: any
+}
+
+export interface IEncoder extends Encoder {
+	decodeKeys: (tag: any) => any
 }
