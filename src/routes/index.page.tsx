@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from 'rakkasjs'
+import { PrerenderResult, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
 import { ICommandInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { dbFetch } from 'src/helpers'
@@ -186,4 +186,10 @@ export default function MainLayout() {
 			</div> */}
 		</>
 	)
+}
+
+export function prerender(): PrerenderResult {
+	return {
+		shouldPrerender: true,
+	}
 }

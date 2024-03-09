@@ -8,7 +8,9 @@ export default defineConfig({
 	plugins: [
 		tsconfigPaths(),
 		react(),
-		rakkas(),
+		rakkas({
+			prerender: true,
+		}),
 		VitePWA({
 			srcDir: 'src',
 			filename: 'sw.ts',
@@ -20,6 +22,9 @@ export default defineConfig({
 			injectRegister: null,
 			devOptions: {
 				enabled: true,
+			},
+			injectManifest: {
+				injectionPoint: undefined,
 			},
 		}),
 	],
