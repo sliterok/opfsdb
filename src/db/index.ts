@@ -31,7 +31,7 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encode
 			return decode(new Uint8Array(buffer))
 		}
 	} catch (error) {
-		console.error('error reading: ', error)
+		console.warn(`error reading "${fileName}" file:`, error)
 		return null
 	}
 }
@@ -215,10 +215,9 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async drop() {
-		await this.root.removeEntry('records', { recursive: true })
-		await this.root.removeEntry('index', { recursive: true })
-		this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
-		await this.root.getDirectoryHandle('index', { create: true })
+		const globalRoot = await navigator.storage.getDirectory()
+		await globalRoot.removeEntry(this.tableName, { recursive: true })
+		await this.init()
 	}
 }
 
