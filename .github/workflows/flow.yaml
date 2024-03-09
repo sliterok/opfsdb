@@ -34,18 +34,21 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: 20
-                  cache: 'npm'
+                  cache-dependency-path: 'pnpm-lock.yaml'
+            - uses: pnpm/action-setup@v3
+              with:
+                  version: 8
             - name: Install dependencies
-              run: npm ci
+              run: pnpm install
             - name: Build
-              run: npm run build
+              run: pnpm run build
             - name: Setup Pages
               uses: actions/configure-pages@v3
             - name: Upload artifact
               uses: actions/upload-pages-artifact@v2
               with:
-                  # Upload dist repository
-                  path: './dist'
+                  # Upload client
+                  path: './dist/client'
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v2
