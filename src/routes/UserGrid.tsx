@@ -1,6 +1,6 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
-import { ICommandInput, IDropInput, IFetchCommandInput, IInsertInput, IQueryInput } from 'src/db/types'
+import { ICommandInput, IDropInput, IFetchCommandInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
@@ -19,6 +19,14 @@ const columnDefs: AgGridReactProps['columnDefs'] = [
 	{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
 	{ headerName: 'address', field: 'address', filter: true },
 ]
+
+const generateUser = () => ({
+	name: chance.name(),
+	surname: chance.name_suffix(),
+	id: crypto.randomUUID(),
+	itemsBought: chance.integer({ min: 0, max: 500 }),
+	address: chance.address(),
+})
 
 export default function MainLayout() {
 	const [limit, setLimit] = useState(50)
@@ -67,6 +75,20 @@ export default function MainLayout() {
 		await dbFetch<IDropInput>('/db/users/drop', {})
 	})
 
+	const importUsers = useMutation(async () => {
+		for (let i = 0; i < 15; i++) {
+			const records = Array(50)
+				.fill(true)
+				.map(() => generateUser())
+			// eslint-disable-next-line no-console
+			console.log(i)
+			await dbFetch<IImportInput<IUser>>('/db/users/import', {
+				records,
+			})
+			await new Promise(res => setTimeout(res, 20))
+		}
+	})
+
 	useEffect(() => {
 		const delayDebounceFn = setTimeout(() => {
 			usersQuery.refetch()
@@ -85,16 +107,17 @@ export default function MainLayout() {
 				<div>
 					<button
 						onClick={() => {
-							createUser.mutate({
-								name: chance.name(),
-								surname: chance.name_suffix(),
-								id: crypto.randomUUID(),
-								itemsBought: chance.integer({ min: 0, max: 500 }),
-								address: chance.address(),
-							})
+							createUser.mutate(generateUser())
 						}}
 					>
 						add user
+					</button>
+					<button
+						onClick={() => {
+							importUsers.mutate()
+						}}
+					>
+						add 10k users
 					</button>
 					<button
 						onClick={() => {

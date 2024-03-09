@@ -13,6 +13,11 @@ export interface IInsertInput<T extends IBasicRecord = IBasicRecord> extends IIn
 	record: T
 }
 
+export interface IImportInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput {
+	name: 'import'
+	records: T[]
+}
+
 export interface IQueryOptions {
 	isAnd?: boolean
 	limit?: number
@@ -51,6 +56,7 @@ export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| IDeleteInput
 	| IReadInput
 	| IDropInput
+	| IImportInput
 
 export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
 export type IFetchCommandInput<T extends ICommandInputs> = Omit<T, 'tableName' | 'name'>

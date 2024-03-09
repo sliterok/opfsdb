@@ -17,28 +17,59 @@ import {
 	IBasicRecord,
 	IEncoder,
 	IQueryOptions,
+	IImportInput,
 } from './types'
+import { batchReduce, mergeUint8Arrays } from './helpers'
 
-const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder) => {
+const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder | false) => {
 	try {
 		const fileHandle = await dir.getFileHandle(fileName)
 		const file: Blob = await fileHandle.getFile()
 		const buffer = await file.arrayBuffer()
-		if (encoder) {
-			const tag = encoder.decode(new Uint8Array(buffer))
+		const uintArray = new Uint8Array(buffer)
+		if (encoder === false) {
+			return uintArray
+		} else if (encoder) {
+			const tag = encoder.decode(uintArray)
 			return encoder.decodeKeys(tag)
 		} else {
-			return decode(new Uint8Array(buffer))
+			return decode(uintArray)
 		}
+
+		// const file: Blob = await fileHandle.getFile()
+		// const stream = await file.stream()
+
+		// const reader = stream.getReader()
+		// let state = new Uint8Array()
+		// let readerState = await reader.read()
+		// while (!readerState.done) {
+		// 	state = mergeUint8Arrays(state.length + readerState.value.length, state, readerState.value)
+		// 	readerState = await reader.read()
+		// }
+		// if (encoder === false) {
+		// 	return state
+		// } else if (encoder) {
+		// 	const tag = encoder.decode(state)
+		// 	const decoded = encoder.decodeKeys(tag)
+		// 	return decoded
+		// } else {
+		// 	return decode(state)
+		// }
 	} catch (error) {
+		console.error(error)
 		return null
 	}
 }
 
-const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any>, encoder?: IEncoder) => {
+const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any> | Uint8Array, encoder?: IEncoder | false) => {
 	const fileHandle = await dir.getFileHandle(fileName, { create: true })
 	const writeHandle = await fileHandle.createWritable()
-	const encoded = encoder ? encoder.encode(data) : encode(data)
+	let encoded: Uint8Array
+
+	if (encoder === false) encoded = data as Uint8Array
+	else if (encoder) encoded = encoder.encode(data)
+	else encoded = encode(data)
+
 	await writeHandle.write(encoded)
 	await writeHandle.close()
 }
@@ -53,8 +84,10 @@ export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
 	}
 
 	id(): number {
-		const random = Math.ceil(Math.random() * 1000000)
-		return random
+		const buffer = new BigUint64Array(1)
+		const [random] = crypto.getRandomValues(buffer)
+		const id = Math.floor(Number(random / 2048n))
+		return id
 	}
 
 	read(id: number): Promise<BPTreeNode<K, V>> {
@@ -121,6 +154,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		},
 		options?: IQueryOptions
 	): Promise<T[] | string[]> {
+		// const start = performance.now()
 		let indexes = new Set<string>()
 		for (const key in queries) {
 			const tree = this.trees[key]
@@ -140,36 +174,80 @@ export class OPFSDB<T extends IBasicRecord> {
 			}
 		}
 		const indexArray = Array.from(indexes)
+		// const indexesFinish = performance.now()
 		if (options?.keys) return indexArray
-		const records: T[] = Array(indexes.size)
-		for (let i = 0; i < indexes.size; i++) {
-			records[i] = await this.read(indexArray[i])
-		}
+
+		const records = await this.readMany(indexArray)
+		// const responsesLoaded = performance.now()
+		// console.log('indexes:', indexesFinish - start, 'records:', responsesLoaded - indexesFinish)
 		return records
 	}
 
-	async filterByKey(key: string, query: BPTreeCondition<string | number>): Promise<T[]> {
-		const tree = this.trees[key]
-		if (!tree) throw new Error('No such index found')
+	// async filterByKey(key: string, query: BPTreeCondition<string | number>): Promise<T[]> {
+	// 	const tree = this.trees[key]
+	// 	if (!tree) throw new Error('No such index found')
 
-		const indexes = Array.from(await tree.keys(query))
-		const records = Array(indexes.length)
-		for (let i = 0; i < indexes.length; i++) {
-			records[i] = await this.read(indexes[i])
-		}
-		return records
-	}
+	// 	const indexes = Array.from(await tree.keys(query))
+	// 	const records = Array(indexes.length)
+	// 	for (let i = 0; i < indexes.length; i++) {
+	// 		records[i] = await this.read(indexes[i])
+	// 	}
+	// 	return records
+	// }
 
-	async getByKey(key: string, query: BPTreeCondition<string | number>): Promise<T | void> {
-		const tree = this.trees[key]
-		if (!tree) throw new Error('No such index found')
+	// async getByKey(key: string, query: BPTreeCondition<string | number>): Promise<T | void> {
+	// 	const tree = this.trees[key]
+	// 	if (!tree) throw new Error('No such index found')
 
-		const [index] = await tree.keys(query)
-		return index ? await this.read(index) : undefined
+	// 	const [index] = await tree.keys(query)
+	// 	return index ? await this.read(index) : undefined
+	// }
+
+	async readMany(ids: string[]): Promise<T[]> {
+		const result = batchReduce(ids, 20).map(async ids => {
+			let size = 0
+			const records = await Promise.all(
+				ids.map(async id => {
+					const file: Uint8Array = await readFile(this.recordsRoot, id, false)
+					size += file.length
+					return file
+				})
+			)
+			const merged = mergeUint8Arrays(size, ...records)
+			const decoded = this.encoder.decodeMultiple(merged) as T[]
+			return decoded
+		})
+		const response = await Promise.all(result)
+		// const rawRecords = await Promise.all()
+		return response.flat()
 	}
 
 	async read(id: string): Promise<T> {
 		return readFile(this.recordsRoot, id, this.encoder)
+	}
+
+	async import(records: { id: string; value: T }[]) {
+		await Promise.all([
+			...records.map(record => writeFile(this.recordsRoot, record.id, record.value, this.encoder)),
+			...Object.keys(this.trees).map(async key => {
+				const tree = this.trees[key]
+				for (const record of records) {
+					const val = record.value[key]
+					if (val === undefined || val === null) continue
+					await tree.insert(record.id, val)
+				}
+			}),
+			// (async () => {
+			// 	for (const record of records) {
+			// 		for (const key in this.trees) {
+			// 			const val = record.value[key]
+			// 			if (val === undefined || val === null) continue
+			// 			const tree = this.trees[key]
+			// 			await tree.insert(record.id, val)
+			// 		}
+			// 	}
+			// })(),
+		])
 	}
 
 	async insert(id: string, value: T, fullRecord?: boolean) {
@@ -237,6 +315,10 @@ export const insertCommand = async ({ tableName, record, fullRecord }: ICommandI
 	await tables[tableName].insert(record.id, record, fullRecord)
 }
 
+export const importCommand = async ({ tableName, records }: ICommandInput<IImportInput>): Promise<void> => {
+	await tables[tableName].import(records.map(value => ({ id: value.id, value })))
+}
+
 export const deleteCommand = async ({ tableName, id }: ICommandInput<IDeleteInput>): Promise<void> => {
 	await tables[tableName].delete(id)
 }
@@ -262,6 +344,9 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 			case 'insert':
 				await insertCommand(command as IInsertInput<T>)
 				break
+			case 'import':
+				await importCommand(command as IImportInput<T>)
+				break
 			case 'delete':
 				await deleteCommand(command as IDeleteInput)
 				break
@@ -275,7 +360,7 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 				throw new Error('unknown command')
 		}
 
-		return new Response(JSON.stringify(response!), { status: 200 })
+		return new Response(JSON.stringify(response! || {}), { status: 200 })
 	} catch (error) {
 		console.error(command.name, error)
 		return new Response(null, { status: 500, statusText: (error as Error).message })
