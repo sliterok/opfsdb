@@ -95,7 +95,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		this.root = await globalRoot.getDirectoryHandle(this.tableName, { create: true })
 		this.recordsRoot = await this.root.getDirectoryHandle('records', { create: true })
 
-		const { structures = [] } = await readFile(this.root, 'structures.cbor')
+		const { structures = [] } = (await readFile(this.root, 'structures.cbor')) || {}
 		this.encoder = new Encoder({
 			saveStructures: structures => {
 				writeFile(this.root, 'structures.cbor', structures)
