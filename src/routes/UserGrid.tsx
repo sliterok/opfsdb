@@ -1,31 +1,18 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
 import { ICommandInput, IInsertInput, IQueryInput } from 'src/db/types'
-import { dbFetch } from 'src/helpers'
 import { IUser } from 'src/types'
+
 import Chance from 'chance'
-// const createWorker = () => {
-// 	if (typeof Worker !== 'undefined')
-// 		return new Worker(import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw', {
-// 			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
-// 		})
-// }
+
 import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
 import 'ag-grid-community/styles//ag-grid.css'
 import 'ag-grid-community/styles//ag-theme-quartz.css'
 import deepmerge from 'deepmerge'
-import { getQueryFromCondition } from 'src/db/helpers'
+import { getQueryFromCondition, dbFetch } from 'src/db/helpers'
 import { diff } from 'deep-object-diff'
 
 const chance = new Chance()
-async function initWorker() {
-	// eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
-	if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-		await navigator.serviceWorker.register(import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw', {
-			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
-		})
-	}
-}
 
 const columnDefs: AgGridReactProps['columnDefs'] = [
 	{ headerName: 'ID', field: 'id', filter: true },
@@ -35,7 +22,6 @@ const columnDefs: AgGridReactProps['columnDefs'] = [
 	{ headerName: 'address', field: 'address', filter: true },
 ]
 
-initWorker()
 export default function MainLayout() {
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')

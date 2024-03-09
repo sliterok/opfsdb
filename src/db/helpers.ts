@@ -1,4 +1,13 @@
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
+import { IFetchDb } from './types'
+
+const swFailCodes = new Set([501, 405])
+
+export const dbFetch: IFetchDb = async (url, body) => {
+	const response = await fetch(url, { body: JSON.stringify(body), method: 'POST' })
+	if (swFailCodes.has(response.status)) return
+	return response.json()
+}
 
 export function getQueryFromCondition(type: string, val: string) {
 	let op: keyof BPTreeCondition<any> | void = undefined
