@@ -5,7 +5,6 @@ import { ICommandInputs } from './db/types'
 
 async function init() {
 	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
-	// await dropCommand({ tableName: 'users' })
 }
 
 init()
