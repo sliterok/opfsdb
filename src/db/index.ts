@@ -168,18 +168,16 @@ export class OPFSDB<T extends IBasicRecord> {
 				const newValue = value[key]
 				const oldValue = oldRecord[key]
 
-				const added: boolean = !oldValue && newValue
-				if (!added) continue
-				const updated: boolean = oldValue !== newValue
-				if (!updated) continue
-				const deleted: boolean = fullRecord && oldValue && !newValue
-				if (!deleted) continue
+				const hasOldValue = typeof oldValue !== 'undefined'
+				const hasNewValue = typeof newValue !== 'undefined'
+
+				const added: boolean = !hasOldValue && hasNewValue
+				const updated: boolean = oldValue !== newValue && hasOldValue && hasNewValue
+				const deleted: boolean = !!fullRecord && hasOldValue && !hasNewValue
 
 				const tree = this.trees[key]
-				if (updated || deleted) {
-					await tree.delete(id, oldValue)
-				}
-				if (!deleted) await tree.insert(id, newValue)
+				if (updated || deleted) await tree.delete(id, oldValue)
+				if ((updated || added) && !deleted) await tree.insert(id, newValue)
 			}
 		}
 	}
