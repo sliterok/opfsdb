@@ -31,7 +31,6 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encode
 			return decode(new Uint8Array(buffer))
 		}
 	} catch (error) {
-		console.warn(`error reading "${fileName}" file:`, error)
 		return null
 	}
 }
@@ -121,7 +120,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			[key in keyof T]?: BPTreeCondition<string | number>
 		},
 		options?: IQueryOptions
-	): Promise<T[]> {
+	): Promise<T[] | string[]> {
 		let indexes = new Set<string>()
 		for (const key in queries) {
 			const tree = this.trees[key]
@@ -141,6 +140,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			}
 		}
 		const indexArray = Array.from(indexes)
+		if (options?.keys) return indexArray
 		const records: T[] = Array(indexes.size)
 		for (let i = 0; i < indexes.size; i++) {
 			records[i] = await this.read(indexArray[i])
@@ -229,7 +229,7 @@ export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICre
 	tables[tableName] = table
 }
 
-export const queryCommand = <T>({ tableName, query, ...options }: ICommandInput<IQueryInput>): Promise<T[]> => {
+export const queryCommand = <T>({ tableName, query, ...options }: ICommandInput<IQueryInput>): Promise<T[] | string[]> => {
 	return tables[tableName].query(query, options as IQueryOptions)
 }
 
@@ -251,7 +251,7 @@ export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<v
 
 export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>) => {
 	try {
-		let response: T[]
+		let response: T[] | string[]
 		switch (command.name) {
 			case 'createTable':
 				await createTableCommand(command as ICreateTableInput)
@@ -266,7 +266,7 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 				await deleteCommand(command as IDeleteInput)
 				break
 			case 'read':
-				response = await readCommand(command as IReadInput)
+				response = (await readCommand(command as IReadInput)) as T[]
 				break
 			case 'drop':
 				await dropCommand(command as IDropInput)

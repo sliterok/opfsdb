@@ -1,6 +1,6 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
-import { ICommandInput, IDropInput, IInsertInput, IQueryInput } from 'src/db/types'
+import { ICommandInput, IDropInput, IFetchCommandInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
@@ -32,7 +32,7 @@ export default function MainLayout() {
 			if (typeof window === 'undefined') return []
 
 			try {
-				const query = {
+				const query: IFetchCommandInput<IQueryInput> = {
 					query: {
 						name: {
 							like: '%' + searchInput + '%',

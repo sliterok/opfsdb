@@ -16,6 +16,7 @@ export interface IInsertInput<T extends IBasicRecord = IBasicRecord> extends IIn
 export interface IQueryOptions {
 	isAnd?: boolean
 	limit?: number
+	keys?: boolean
 }
 
 export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput, IQueryOptions {
