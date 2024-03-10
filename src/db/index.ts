@@ -20,6 +20,7 @@ import {
 	IImportInput,
 } from './types'
 import { batchReduce, mergeUint8Arrays } from './helpers'
+import deepmerge from 'deepmerge'
 
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder | false) => {
 	try {
@@ -253,7 +254,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	async insert(id: string, value: T, fullRecord?: boolean) {
 		const oldRecord = await this.read(id)
 
-		await writeFile(this.recordsRoot, id, value, this.encoder)
+		await writeFile(this.recordsRoot, id, fullRecord || !oldRecord ? value : deepmerge(oldRecord, value), this.encoder)
 
 		if (!oldRecord) {
 			for (const key in this.trees) {
