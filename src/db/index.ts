@@ -155,7 +155,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		},
 		options?: IQueryOptions
 	): Promise<T[] | string[]> {
-		// const start = performance.now()
+		const start = performance.now()
 		let indexes = new Set<string>()
 		for (const key in queries) {
 			const tree = this.trees[key]
@@ -175,12 +175,13 @@ export class OPFSDB<T extends IBasicRecord> {
 			}
 		}
 		const indexArray = Array.from(indexes)
-		// const indexesFinish = performance.now()
+		const indexesFinish = performance.now()
 		if (options?.keys) return indexArray
 
 		const records = await this.readMany(indexArray)
-		// const responsesLoaded = performance.now()
-		// console.log('indexes:', indexesFinish - start, 'records:', responsesLoaded - indexesFinish)
+		const responsesLoaded = performance.now()
+		// eslint-disable-next-line no-console
+		console.log('indexes:', indexesFinish - start, 'records:', responsesLoaded - indexesFinish)
 		return records
 	}
 
