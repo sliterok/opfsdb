@@ -25,54 +25,39 @@ import deepmerge from 'deepmerge'
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder | false) => {
 	try {
 		const fileHandle = await dir.getFileHandle(fileName)
-		const file: Blob = await fileHandle.getFile()
-		const buffer = await file.arrayBuffer()
-		const uintArray = new Uint8Array(buffer)
+		const accessHandle = await fileHandle.createSyncAccessHandle()
+		const uintArray = new Uint8Array(new ArrayBuffer(accessHandle.getSize()))
+		accessHandle.read(uintArray)
+		accessHandle.close()
+
 		if (encoder === false) {
 			return uintArray
 		} else if (encoder) {
 			const tag = encoder.decode(uintArray)
-			return encoder.decodeKeys(tag)
+			const decoded = encoder.decodeKeys(tag)
+			return decoded
 		} else {
-			return decode(uintArray)
+			const decoded = decode(uintArray)
+			return decoded
 		}
-
-		// const file: Blob = await fileHandle.getFile()
-		// const stream = await file.stream()
-
-		// const reader = stream.getReader()
-		// let state = new Uint8Array()
-		// let readerState = await reader.read()
-		// while (!readerState.done) {
-		// 	state = mergeUint8Arrays(state.length + readerState.value.length, state, readerState.value)
-		// 	readerState = await reader.read()
-		// }
-		// if (encoder === false) {
-		// 	return state
-		// } else if (encoder) {
-		// 	const tag = encoder.decode(state)
-		// 	const decoded = encoder.decodeKeys(tag)
-		// 	return decoded
-		// } else {
-		// 	return decode(state)
-		// }
 	} catch (error) {
-		console.error(error)
+		if (!(error as DOMException).NOT_FOUND_ERR) console.error(error)
 		return null
 	}
 }
 
 const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any> | Uint8Array, encoder?: IEncoder | false) => {
 	const fileHandle = await dir.getFileHandle(fileName, { create: true })
-	const writeHandle = await fileHandle.createWritable()
+	const writable = await fileHandle.createWritable()
+
 	let encoded: Uint8Array
 
-	if (encoder === false) encoded = data as Uint8Array
+	if (encoder === false) encoded = new Uint8Array(data as Uint8Array)
 	else if (encoder) encoded = encoder.encode(data)
 	else encoded = encode(data)
 
-	await writeHandle.write(encoded)
-	await writeHandle.close()
+	await writable.write(encoded)
+	await writable.close()
 }
 
 export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
@@ -118,7 +103,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 5
+		private order = 250
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -334,37 +319,37 @@ export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<v
 }
 
 export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>) => {
-	try {
-		let response: T[] | string[]
-		switch (command.name) {
-			case 'createTable':
-				await createTableCommand(command as ICreateTableInput)
-				break
-			case 'query':
-				response = await queryCommand<T>(command as IQueryInput<T>)
-				break
-			case 'insert':
-				await insertCommand(command as IInsertInput<T>)
-				break
-			case 'import':
-				await importCommand(command as IImportInput<T>)
-				break
-			case 'delete':
-				await deleteCommand(command as IDeleteInput)
-				break
-			case 'read':
-				response = (await readCommand(command as IReadInput)) as T[]
-				break
-			case 'drop':
-				await dropCommand(command as IDropInput)
-				break
-			default:
-				throw new Error('unknown command')
-		}
-
-		return new Response(JSON.stringify(response! || {}), { status: 200 })
-	} catch (error) {
-		console.error(command.name, error)
-		return new Response(null, { status: 500, statusText: (error as Error).message })
+	// try {
+	let response: T[] | string[]
+	switch (command.name) {
+		case 'createTable':
+			await createTableCommand(command as ICreateTableInput)
+			break
+		case 'query':
+			response = await queryCommand<T>(command as IQueryInput<T>)
+			break
+		case 'insert':
+			await insertCommand(command as IInsertInput<T>)
+			break
+		case 'import':
+			await importCommand(command as IImportInput<T>)
+			break
+		case 'delete':
+			await deleteCommand(command as IDeleteInput)
+			break
+		case 'read':
+			response = (await readCommand(command as IReadInput)) as T[]
+			break
+		case 'drop':
+			await dropCommand(command as IDropInput)
+			break
+		default:
+			throw new Error('unknown command')
 	}
+
+	return response! //new Response(JSON.stringify(response! || {}), { status: 200 })
+	// } catch (error) {
+	// 	console.error(command.name, error)
+	// 	return new Response(null, { status: 500, statusText: (error as Error).message })
+	// }
 }

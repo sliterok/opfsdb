@@ -1,16 +1,32 @@
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
-import { IFetchDb } from './types'
+import { IBasicRecord, ICommandInputs } from './types'
 
-const swFailCodes = new Set([501, 405])
+let worker: Worker
 
-export const dbFetch: IFetchDb = async (url, body) => {
-	const response = await fetch(url, { body: JSON.stringify(body), method: 'POST' })
-	if (response.status !== 200) {
-		if (swFailCodes.has(response.status)) console.warn('service worker wasnt registered at db query, retry')
-		return
-	}
-	return response.json()
+export function getWorker() {
+	if (!worker)
+		worker = new Worker(new URL(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', import.meta.url), {
+			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
+		})
+	return worker
 }
+
+export const sendCommand = <Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
+	command: Command
+): Promise<ReturnType[] | void> =>
+	new Promise((res, rej) => {
+		const worker = getWorker()
+
+		worker.onmessage = ({ data }) => {
+			if (data.error) {
+				rej(data.error)
+			} else {
+				res(data.result)
+			}
+		}
+
+		worker.postMessage(command)
+	})
 
 export function getQueryFromCondition(type: string, val: string) {
 	let op: keyof BPTreeCondition<any> | void = undefined

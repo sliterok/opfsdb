@@ -1,13 +1,13 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
 import { useEffect, useState } from 'react'
-import { ICommandInput, IDropInput, IFetchCommandInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
+import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
 import 'ag-grid-community/styles//ag-grid.css'
 import 'ag-grid-community/styles//ag-theme-quartz.css'
 import deepmerge from 'deepmerge'
-import { getQueryFromCondition, dbFetch } from 'src/db/helpers'
+import { getQueryFromCondition, sendCommand } from 'src/db/helpers'
 import { diff } from 'deep-object-diff'
 
 const chance = new Chance()
@@ -40,7 +40,9 @@ export default function MainLayout() {
 			if (typeof window === 'undefined') return []
 
 			try {
-				const query: IFetchCommandInput<IQueryInput> = {
+				const command: IQueryInput = {
+					name: 'query',
+					tableName: 'users',
 					query: {
 						name: {
 							like: '%' + searchInput + '%',
@@ -49,7 +51,7 @@ export default function MainLayout() {
 					isAnd: isAndQuery,
 					limit,
 				}
-				const users = await dbFetch<IQueryInput<IUser>, IUser>(`/db/users/query`, queryInput ? deepmerge(query, queryInput) : query)
+				const users = await sendCommand<IQueryInput, IUser>(queryInput ? deepmerge(command, queryInput) : command)
 				return users as IUser[]
 			} catch (error) {
 				console.error(error)
@@ -60,7 +62,9 @@ export default function MainLayout() {
 
 	const createUser = useMutation(
 		async (record: IUser) => {
-			await dbFetch<IInsertInput<IUser>>('/db/users/insert', {
+			await sendCommand<IInsertInput<IUser>, IUser>({
+				name: 'insert',
+				tableName: 'users',
 				record,
 			})
 		},
@@ -72,7 +76,10 @@ export default function MainLayout() {
 	)
 
 	const dropTable = useMutation(async () => {
-		await dbFetch<IDropInput>('/db/users/drop', {})
+		await sendCommand<IDropInput>({
+			name: 'drop',
+			tableName: 'users',
+		})
 	})
 
 	const importUsers = useMutation(async () => {
@@ -80,11 +87,14 @@ export default function MainLayout() {
 			const records = Array(1000)
 				.fill(true)
 				.map(() => generateUser())
-			// eslint-disable-next-line no-console
-			console.log(i * 1000)
-			await dbFetch<IImportInput<IUser>>('/db/users/import', {
+			const start = performance.now()
+			await sendCommand<IImportInput<IUser>, IUser>({
+				name: 'import',
+				tableName: 'users',
 				records,
 			})
+			// eslint-disable-next-line no-console
+			console.log('uploading users', (i + 1) * 1000, 'of 10000, time took:', performance.now() - start)
 		}
 	})
 
