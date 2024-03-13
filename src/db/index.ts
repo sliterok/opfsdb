@@ -19,11 +19,28 @@ import {
 	IQueryOptions,
 	IImportInput,
 } from './types'
-import { batchReduce, mergeUint8Arrays } from './helpers'
 import deepmerge from 'deepmerge'
+import { batchReduce, mergeUint8Arrays } from './helpers'
+
+const pendingWrites = new Set<string>()
+const promiseMap = new Map<string, Promise<void>>()
+const timeoutMap = new Map<string, ReturnType<typeof setTimeout>>()
+const dataMap = new Map<string, unknown>()
+
+const getPendingWritePromises = (): Promise<void>[] => {
+	const promises = Array(pendingWrites.size)
+	let i = 0
+	for (const fileName of pendingWrites.keys()) {
+		promises[i++] = promiseMap.get(fileName)
+	}
+	return promises
+}
 
 const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encoder?: IEncoder | false) => {
 	try {
+		if (dataMap.has(fileName)) {
+			return dataMap.get(fileName)
+		}
 		const fileHandle = await dir.getFileHandle(fileName)
 		const accessHandle = await fileHandle.createSyncAccessHandle()
 		const uintArray = new Uint8Array(new ArrayBuffer(accessHandle.getSize()))
@@ -46,18 +63,37 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, encode
 	}
 }
 
-const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any> | Uint8Array, encoder?: IEncoder | false) => {
-	const fileHandle = await dir.getFileHandle(fileName, { create: true })
-	const writable = await fileHandle.createWritable()
+const writeFile = async (dir: FileSystemDirectoryHandle, fileName: string, data: Record<string, any>, encoder?: IEncoder) => {
+	if (timeoutMap.has(fileName)) {
+		const timeout = timeoutMap.get(fileName)!
+		clearTimeout(timeout)
+	}
 
-	let encoded: Uint8Array
+	const promise = new Promise<void>(res => {
+		const timeout = setTimeout(async () => {
+			const fileHandle = await dir.getFileHandle(fileName, { create: true })
+			const writable = await fileHandle.createWritable()
 
-	if (encoder === false) encoded = new Uint8Array(data as Uint8Array)
-	else if (encoder) encoded = encoder.encode(data)
-	else encoded = encode(data)
+			let encoded: Uint8Array
 
-	await writable.write(encoded)
-	await writable.close()
+			if (encoder) encoded = encoder.encode(data)
+			else encoded = encode(data)
+
+			await writable.write(encoded)
+			await writable.close()
+
+			promiseMap.delete(fileName)
+			timeoutMap.delete(fileName)
+			pendingWrites.delete(fileName)
+			dataMap.delete(fileName)
+			res()
+		}, 10)
+		timeoutMap.set(fileName, timeout)
+	})
+
+	pendingWrites.add(fileName)
+	promiseMap.set(fileName, promise)
+	dataMap.set(fileName, data)
 }
 
 export class FileStoreStrategy<K, V> extends SerializeStrategy<K, V> {
@@ -166,7 +202,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		const records = await this.readMany(indexArray)
 		const responsesLoaded = performance.now()
 		// eslint-disable-next-line no-console
-		console.log('indexes:', indexesFinish - start, 'records:', responsesLoaded - indexesFinish)
+		console.log(`indexes: ${Math.floor(indexesFinish - start)}ms, records: ${Math.floor(responsesLoaded - indexesFinish)}ms`)
 		return records
 	}
 
@@ -191,22 +227,30 @@ export class OPFSDB<T extends IBasicRecord> {
 	// }
 
 	async readMany(ids: string[]): Promise<T[]> {
-		const result = batchReduce(ids, 20).map(async ids => {
+		const promises = batchReduce(ids, 200).map(async ids => {
 			let size = 0
-			const records = await Promise.all(
-				ids.map(async id => {
-					const file: Uint8Array = await readFile(this.recordsRoot, id, false)
-					size += file.length
-					return file
-				})
-			)
-			const merged = mergeUint8Arrays(size, ...records)
+			const unEncodedData: T[] = []
+			const binaryData = (
+				await Promise.all(
+					ids.map(async id => {
+						const file = await readFile(this.recordsRoot, id, false)
+						if (file instanceof Uint8Array) {
+							size += file.length
+							return file
+						} else {
+							unEncodedData.push(file)
+						}
+					})
+				)
+			).filter(file => file) as Uint8Array[]
+			const merged = mergeUint8Arrays(size, ...binaryData)
 			const decoded = this.encoder.decodeMultiple(merged) as T[]
-			return decoded
+			return [...unEncodedData, ...decoded]
 		})
-		const response = await Promise.all(result)
-		// const rawRecords = await Promise.all()
-		return response.flat()
+		// const promises = ids.map(id => readFile(this.recordsRoot, id, this.encoder))
+		const result = await Promise.all(promises)
+
+		return result.flat()
 	}
 
 	async read(id: string): Promise<T> {
@@ -235,6 +279,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			// 	}
 			// })(),
 		])
+		await Promise.all(getPendingWritePromises())
 	}
 
 	async insert(id: string, value: T, fullRecord?: boolean) {
@@ -266,6 +311,8 @@ export class OPFSDB<T extends IBasicRecord> {
 				if ((updated || added) && !deleted) await tree.insert(id, newValue)
 			}
 		}
+
+		await Promise.all(getPendingWritePromises())
 	}
 
 	async delete(id: string, oldRecord?: T) {
@@ -321,6 +368,7 @@ export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<v
 export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>) => {
 	// try {
 	let response: T[] | string[]
+	const start = performance.now()
 	switch (command.name) {
 		case 'createTable':
 			await createTableCommand(command as ICreateTableInput)
@@ -347,9 +395,7 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 			throw new Error('unknown command')
 	}
 
-	return response! //new Response(JSON.stringify(response! || {}), { status: 200 })
-	// } catch (error) {
-	// 	console.error(command.name, error)
-	// 	return new Response(null, { status: 500, statusText: (error as Error).message })
-	// }
+	// eslint-disable-next-line no-console
+	console.log(`${command.name} cmd took: ${Math.round(performance.now() - start)}ms`)
+	return response!
 }

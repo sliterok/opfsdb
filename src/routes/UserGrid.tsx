@@ -87,14 +87,14 @@ export default function MainLayout() {
 			const records = Array(1000)
 				.fill(true)
 				.map(() => generateUser())
-			const start = performance.now()
+
 			await sendCommand<IImportInput<IUser>, IUser>({
 				name: 'import',
 				tableName: 'users',
 				records,
 			})
 			// eslint-disable-next-line no-console
-			console.log('uploading users', (i + 1) * 1000, 'of 10000, time took:', performance.now() - start)
+			console.log('uploading users', (i + 1) * 1000, 'of 10000')
 		}
 	})
 
