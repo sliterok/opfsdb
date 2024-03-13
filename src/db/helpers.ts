@@ -5,7 +5,7 @@ let worker: Worker
 
 export function getWorker() {
 	if (!worker)
-		worker = new Worker(new URL(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', import.meta.url), {
+		worker = new Worker(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', {
 			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
 		})
 	return worker
