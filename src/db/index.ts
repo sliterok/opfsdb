@@ -60,12 +60,12 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, from =
 		if (to && fileName !== 'records') {
 			const sl = uintArray.slice(uintArray.length - 2, uintArray.length)
 			const [index] = new Uint16Array(sl.buffer)
-			// console.log(sl, index)
-			if (index) sliced = uintArray.slice(0, index)
+			if (!index) console.warn("empty reads won't init the structure in memory")
+			sliced = uintArray.slice(0, index)
 		}
 		if (!sliced!) {
 			sliced = uintArray
-			// console.log('decode:', fileName, uintArray, sliced)
+			// console.log('decode:', dir.name, fileName, uintArray, sliced)
 		}
 
 		if (encoder === false) {
@@ -81,7 +81,7 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, from =
 			return decoded
 		}
 	} catch (error) {
-		if (!(error as DOMException).NOT_FOUND_ERR) console.error(error)
+		if (!(error as DOMException).NOT_FOUND_ERR) console.error(dir.name, fileName, error)
 		return null
 	}
 }
@@ -110,7 +110,7 @@ const writeFile = async (
 		else if (encoder) encoded = encoder.encode(data)
 		else encoded = encode(data)
 
-		// console.log('encoded:', fileName, encoded, data)
+		// if (fileName === 'head') console.log('encoded:', dir.name, fileName, encoded, data)
 
 		await writable.write(encoded, { at })
 		if (pageSize) {
@@ -142,13 +142,14 @@ const writeFile = async (
 export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 	private index = 0
 	private lastHead?: SerializeStrategyHead
+	private writeHeadTimeout: ReturnType<typeof setTimeout> | void
 
 	constructor(
 		order: number,
 		private root: FileSystemDirectoryHandle,
 		private encoder: IEncoder,
 		private indexName: string,
-		private pageSize = 4096
+		private pageSize = 8192
 	) {
 		super(order)
 	}
@@ -156,7 +157,7 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 	async id(): Promise<number> {
 		this.index += 1
 		// console.log('returned index:', this.index, this.indexName)
-		if (this.lastHead) this.writeHead(this.lastHead)
+		if (this.lastHead) await this.writeHead(this.lastHead)
 		return this.index
 	}
 
@@ -170,18 +171,26 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 	}
 
 	async readHead(): Promise<SerializeStrategyHead | null> {
+		if (this.lastHead) {
+			this.lastHead.data.index = this.index
+			return this.lastHead
+		}
 		const head: SerializeStrategyHead = await readFile(this.root, 'head', 0, this.encoder)
 
 		this.index = Math.max((head?.data?.index as number) || 0, this.index)
 		this.lastHead = head
-		// console.log(head)
+		// console.log('read', this.indexName, head)
 		return head
 	}
 
 	async writeHead(head: SerializeStrategyHead): Promise<void> {
+		if (this.writeHeadTimeout) clearTimeout(this.writeHeadTimeout)
 		head.data.index = this.index
-		// console.log(head)
-		return writeFile(this.root, 'head', head, this.encoder)
+		this.lastHead = head
+		this.writeHeadTimeout = setTimeout(() => {
+			// console.log('write', this.indexName, this.index)
+			writeFile(this.root, 'head', head, this.encoder)
+		}, 100)
 	}
 }
 
@@ -198,7 +207,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 10
+		private order = 20
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -223,14 +232,15 @@ export class OPFSDB<T extends IBasicRecord> {
 
 		const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
-		const indexDir = await indexesDir.getDirectoryHandle('records', { create: true })
+		const recordsIndexDir = await indexesDir.getDirectoryHandle('records', { create: true })
 		this.recordsIndex = new BPTreeAsync<string, string>(
-			new FileStoreStrategy<string, string>(70, indexDir, this.encoder, 'recordsIndex'),
+			new FileStoreStrategy<string, string>(70, recordsIndexDir, this.encoder, 'recordsIndex'),
 			new Comparator()
 		)
 		await this.recordsIndex.init()
 
-		this.holesIndex = new BPTreeAsync<number, number>(new FileStoreStrategy(70, indexDir, this.encoder, 'holes'), new Comparator())
+		const holesDir = await indexesDir.getDirectoryHandle('holes', { create: true })
+		this.holesIndex = new BPTreeAsync<number, number>(new FileStoreStrategy(70, holesDir, this.encoder, 'holes'), new Comparator())
 		await this.holesIndex.init()
 
 		const indexInfo = await readFile(this.recordsRoot, 'lastIndex', 0, this.encoder)
@@ -345,7 +355,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		return file
 	}
 
-	async getHole(size: number) {
+	async getHole(size: number): Promise<[number, number] | void> {
 		// TODO: limit to 1
 		const [hole] = await this.holesIndex.where({
 			gte: size,
@@ -354,21 +364,26 @@ export class OPFSDB<T extends IBasicRecord> {
 		return [hole.key, hole.value]
 	}
 
+	async cleanupHole(hole: [number, number] | void, encodedLength: number, encodedEndIndex: number) {
+		if (!hole) return
+		const [start, length] = hole
+		await this.holesIndex.delete(start, length)
+		const lengthDiff = length - encodedLength
+		if (lengthDiff > 0) {
+			await this.holesIndex.insert(encodedEndIndex, lengthDiff)
+		}
+	}
+
 	async import(records: { id: string; value: T }[]) {
 		let indexChanged = false
 		for (const record of records) {
 			const encoded = this.encoder.encode(record.value)
 			const hole = await this.getHole(encoded.length)
-			const [start, length] = hole || []
+			const [start] = hole || []
 			const at = start || this.lastIndex
 			const to = at + encoded.length
-			if (hole) {
-				await this.holesIndex.delete(start, length)
-				const lengthDiff = length - encoded.length
-				if (lengthDiff > 0) {
-					await this.holesIndex.insert(to, lengthDiff)
-				}
-			} else {
+			await this.cleanupHole(hole, encoded.length, to)
+			if (!hole) {
 				indexChanged = true
 				this.lastIndex = to
 			}
@@ -389,32 +404,44 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async insert(id: string, value: T, fullRecord?: boolean) {
-		const oldRecord = await this.read(id)
+		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
+		const [oldStart, oldLength] = recordLocation ? recordLocation.split(',').map(el => parseInt(el)) : []
+		const oldRecord = recordLocation && (await readFile(this.recordsRoot, 'records', oldStart, this.encoder, oldStart + oldLength))
 
-		// const [recordLocation] = await this.recordsIndex.keys({equal: id})
-		// const [start, end] = recordLocation.split(',').map(el => parseInt(el))
-		// const file = await readFile(this.recordsRoot, 'records', start, false, end)
 		const payload = fullRecord || !oldRecord ? value : deepmerge(oldRecord, value)
 		const encoded = this.encoder.encode(payload)
 
-		const hole = await this.getHole(encoded.length)
-		const [start, length] = hole || []
+		const couldBeInHole = recordLocation ? encoded.length > oldLength : true
+		let moved = false
+		let hole: void | [number, number] = undefined
+		let start = oldStart
+		if (couldBeInHole) {
+			hole = await this.getHole(encoded.length)
+			if (hole) {
+				if (recordLocation) {
+					moved = true
+					await this.recordsIndex.delete(`${oldStart},${oldLength}`, id)
+					await this.holesIndex.insert(oldStart, oldLength)
+				}
+				start = hole[0]
+			}
+		}
 
-		const at = start || this.lastIndex
+		const overflow = recordLocation && encoded.length > oldLength
+		const at = overflow ? this.lastIndex : start || this.lastIndex
 		const to = at + encoded.length
 
-		if (hole) {
-			await this.holesIndex.delete(start, length)
-			const lengthDiff = length - encoded.length
-			if (lengthDiff > 0) {
-				await this.holesIndex.insert(to, lengthDiff)
-			}
-		} else {
+		await this.cleanupHole(hole, encoded.length, to)
+
+		if ((!hole && !recordLocation) || overflow) {
 			this.lastIndex = to
 			await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: to }, this.encoder)
 		}
-
+		if (!moved && recordLocation && oldLength !== encoded.length) {
+			await this.recordsIndex.delete(`${oldStart},${oldLength}`, id)
+		}
 		await this.recordsIndex.insert(`${at},${encoded.length}`, id)
+
 		await writeFile(this.recordsRoot, 'records', encoded, false, at, to)
 
 		if (!oldRecord) {
@@ -441,8 +468,6 @@ export class OPFSDB<T extends IBasicRecord> {
 				if ((updated || added) && !deleted) await tree.insert(id, newValue)
 			}
 		}
-
-		await Promise.all(getPendingWritePromises())
 	}
 
 	async delete(id: string, oldRecord?: T) {
