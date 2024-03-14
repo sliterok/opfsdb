@@ -14,19 +14,22 @@ const chance = new Chance()
 
 const columnDefs: AgGridReactProps['columnDefs'] = [
 	{ headerName: 'ID', field: 'id', filter: true },
-	{ headerName: 'Prefix', field: 'surname', filter: true },
 	{ headerName: 'Name', field: 'name', filter: true },
+	{ headerName: 'Surname', field: 'surname', filter: true },
 	{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
 	{ headerName: 'address', field: 'address', filter: true },
 ]
 
-const generateUser = () => ({
-	name: chance.name(),
-	surname: chance.name_suffix(),
-	id: crypto.randomUUID(),
-	itemsBought: chance.integer({ min: 0, max: 500 }),
-	address: chance.address(),
-})
+const generateUser = () => {
+	const [name, surname] = chance.name().split(' ')
+	return {
+		name,
+		surname,
+		id: crypto.randomUUID(),
+		itemsBought: chance.integer({ min: 0, max: 500 }),
+		address: chance.address(),
+	}
+}
 
 export default function MainLayout() {
 	const [limit, setLimit] = useState(50)
@@ -83,8 +86,8 @@ export default function MainLayout() {
 	})
 
 	const importUsers = useMutation(async () => {
-		for (let i = 0; i < 10; i++) {
-			const records = Array(1000)
+		for (let i = 0; i < 1; i++) {
+			const records = Array(100)
 				.fill(true)
 				.map(() => generateUser())
 

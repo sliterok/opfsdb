@@ -37,7 +37,7 @@
     "deepmerge": "^4.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "serializable-bptree": "^2.0.0",
+    "serializable-bptree": "^3.1.0",
     "styled-components": "^6.1.8"
   }
 }

@@ -39,8 +39,8 @@ dependencies:
     specifier: ^18.2.0
     version: 18.2.0(react@18.2.0)
   serializable-bptree:
-    specifier: ^2.0.0
-    version: 2.0.0
+    specifier: ^3.1.0
+    version: 3.1.0
   styled-components:
     specifier: ^6.1.8
     version: 6.1.8(react-dom@18.2.0)(react@18.2.0)
@@ -4938,8 +4938,8 @@ packages:
       lru-cache: 6.0.0
     dev: true
 
-  /serializable-bptree@2.0.0:
-    resolution: {integrity: sha512-C9d+LpQVbVdIm7JArnnxg56seGnCSGZDAKHsn/+cojAeQ8y3VTO1G3zCbri+dPT9djr119+PZfdqc6IOOF7KWg==}
+  /serializable-bptree@3.1.0:
+    resolution: {integrity: sha512-cJ3/BDFrwkSun1mElnnj2QLhObd31mI/gi0W25d6LZiOxG4NZFZZHFvMX/hb7dxfoeoWcN57v7AAn8pG5LovAg==}
     dev: false
 
   /serialize-javascript@4.0.0:
