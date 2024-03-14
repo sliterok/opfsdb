@@ -1,16 +1,17 @@
 /// <reference lib="webworker" />
 
-import { command, createTableCommand } from './db/index'
+import { command, createTableCommand, unloadCommand } from './db/index'
 
+let isMaster = false
 async function init() {
+	isMaster = true
 	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
 }
-
 let initted: (val: void) => void
 const dedicatedInitted: Promise<void> | void = new Promise(res => (initted = res))
 let dedicatedStarted: Promise<void> | void = undefined
 let masterPort: MessagePort | void = undefined
-const ports: MessagePort[] = []
+const ports = new Set<MessagePort>()
 // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
 self.onconnect = function (e) {
 	// shared worker
@@ -19,11 +20,27 @@ self.onconnect = function (e) {
 	port.postMessage({ isMaster: !masterPort })
 	if (!masterPort) {
 		masterPort = port
-		return
+	} else {
+		ports.add(port)
 	}
-	ports.push(port)
+
+	const migrate = () => {
+		masterPort = ports.values().next().value
+		if (masterPort) {
+			ports.delete(masterPort!)
+			masterPort!.postMessage({ isMaster: true })
+		}
+	}
 
 	port.onmessage = async e => {
+		if (e.data.closing) {
+			ports.delete(port)
+			if (masterPort === port) {
+				migrate()
+			}
+			return
+		}
+		if (masterPort === port) return
 		if (e.data.result || e.data.error) return
 		const p = new Promise<void>(res => {
 			const callback = (response: MessageEvent) => {
@@ -39,8 +56,7 @@ self.onconnect = function (e) {
 		const shouldMigrate = await Promise.race([p, t])
 		if (shouldMigrate) {
 			console.log('master timed out, migrating...')
-			masterPort = ports.shift()
-			masterPort!.postMessage({ isMaster: true })
+			migrate()
 
 			const callback = (response: MessageEvent) => {
 				port.postMessage(response.data)
@@ -60,7 +76,10 @@ let sharedWorkerPort: MessagePort | void = undefined
 // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
 self.onmessage = async req => {
 	// dedicated worker
-	if (req.data.workerPort) {
+	if (req.data.closing) {
+		if (isMaster) await unloadCommand({ tableName: 'users' })
+		sharedWorkerPort!.postMessage({ closing: true })
+	} else if (req.data.workerPort) {
 		sharedWorkerPort = req.data.workerPort
 		sharedWorkerPort!.start()
 		sharedWorkerPort!.addEventListener('message', async e => {

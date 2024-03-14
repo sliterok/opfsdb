@@ -49,6 +49,10 @@ export interface IDropInput extends IBaseInput {
 	name: 'drop'
 }
 
+export interface IUnloadInput extends IBaseInput {
+	name: 'unload'
+}
+
 export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| ICreateTableInput
 	| IQueryInput<T>
@@ -57,6 +61,7 @@ export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| IReadInput
 	| IDropInput
 	| IImportInput
+	| IUnloadInput
 
 export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
 export type IFetchCommandInput<T extends ICommandInputs> = Omit<T, 'tableName' | 'name'>
