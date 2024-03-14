@@ -4,10 +4,18 @@ import { IBasicRecord, ICommandInputs } from './types'
 let worker: Worker
 
 export function getWorker() {
-	if (!worker)
+	if (!worker) {
+		const sharedWorker = new SharedWorker(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', {
+			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
+		})
+		// sharedWorker.port.start()
+
 		worker = new Worker(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', {
 			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
 		})
+
+		worker.postMessage({ workerPort: sharedWorker.port }, [sharedWorker.port])
+	}
 	return worker
 }
 

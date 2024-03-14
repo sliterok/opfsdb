@@ -561,6 +561,7 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 				await dropCommand(command as IDropInput)
 				break
 			default:
+				console.log(command)
 				throw new Error('unknown command')
 		}
 
