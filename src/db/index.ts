@@ -116,17 +116,17 @@ const writeFile = async (
 		if (pageSize) {
 			const diff = pageSize - encoded.length
 			// if (fileName) console.log(fileName, 'id:', data?.id!, 'encoded length:', encoded.length, 'diff:', diff, 'keys:', data?.keys?.length)
-			if (diff > 0) {
-				if (diff > 2) {
-					const zeros = new Uint8Array(diff - 2)
-					await writable.write(zeros, { at: at + encoded.length })
-				}
+			if (diff >= 2) {
+				// if (diff > 2) {
+				// 	const zeros = new Uint8Array(diff - 2)
+				// 	await writable.write(zeros, { at: at + encoded.length })
+				// }
 
 				const lengthArray = new Uint16Array(1)
 				lengthArray[0] = encoded.length
 				// if (fileName === 'recordsIndex' && encoded.length !== lengthArray[0]) console.log('lengthArray', encoded, lengthArray[0], fileName)
 				await writable.write(lengthArray, { at: at + pageSize - 2 })
-			} else if (diff < 0) {
+			} else if (diff !== 0) {
 				console.log(data)
 				throw new Error(`${fileName} pageSize: ${pageSize} less than encoded: ${encoded.length}, diff: ${diff}`)
 			}
@@ -149,7 +149,7 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 		private root: FileSystemDirectoryHandle,
 		private encoder: IEncoder,
 		private indexName: string,
-		private pageSize = 8192
+		private pageSize = 65536
 	) {
 		super(order)
 	}
@@ -207,7 +207,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 20
+		private order = 40
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -281,7 +281,7 @@ export class OPFSDB<T extends IBasicRecord> {
 				break
 			}
 		}
-		const indexArray = Array.from(indexes)
+		const indexArray = Array.from(indexes).slice(0, options?.limit)
 		const indexesFinish = performance.now()
 		if (options?.keys) return indexArray
 
