@@ -60,7 +60,7 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, from =
 		if (to && fileName !== 'records') {
 			const sl = uintArray.slice(uintArray.length - 2, uintArray.length)
 			const [index] = new Uint16Array(sl.buffer)
-			console.log(sl, index)
+			// console.log(sl, index)
 			if (index) sliced = uintArray.slice(0, index)
 		}
 		if (!sliced!) {
@@ -71,10 +71,10 @@ const readFile = async (dir: FileSystemDirectoryHandle, fileName: string, from =
 		if (encoder === false) {
 			return sliced
 		} else if (encoder) {
-			console.log(`decoding, full ${uintArray.length}, sliced: ${sliced.length}, fileName: ${fileName}`)
+			// console.log(`decoding, full ${uintArray.length}, sliced: ${sliced.length}, fileName: ${fileName}`)
 			const tag = encoder.decode(sliced)
 			const decoded = encoder.decodeKeys(tag)
-			if (fileName === 'records') console.log('decoded:', decoded)
+			// if (fileName === 'records') console.log('decoded:', decoded)
 			return decoded
 		} else {
 			const decoded = decode(sliced)
@@ -115,7 +115,7 @@ const writeFile = async (
 		await writable.write(encoded, { at })
 		if (pageSize) {
 			const diff = pageSize - encoded.length
-			if (fileName) console.log(fileName, 'id:', data?.id!, 'encoded length:', encoded.length, 'diff:', diff, 'keys:', data?.keys?.length)
+			// if (fileName) console.log(fileName, 'id:', data?.id!, 'encoded length:', encoded.length, 'diff:', diff, 'keys:', data?.keys?.length)
 			if (diff > 0) {
 				if (diff > 2) {
 					const zeros = new Uint8Array(diff - 2)
@@ -127,8 +127,8 @@ const writeFile = async (
 				// if (fileName === 'recordsIndex' && encoded.length !== lengthArray[0]) console.log('lengthArray', encoded, lengthArray[0], fileName)
 				await writable.write(lengthArray, { at: at + pageSize - 2 })
 			} else if (diff < 0) {
-				console.log(data)
-				// throw new Error(`pageSize: ${pageSize}, encoded: ${encoded.length}, ${fileName}`)
+				// console.log(data)
+				throw new Error(`${fileName} pageSize: ${pageSize} less than encoded: ${encoded.length}, diff: ${diff}`)
 			}
 		} else {
 			// await writable.write(encoded, { at })
@@ -148,19 +148,14 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 		private root: FileSystemDirectoryHandle,
 		private encoder: IEncoder,
 		private indexName: string,
-		private pageSize = 65536
+		private pageSize = 4096
 	) {
 		super(order)
 	}
 
 	async id(): Promise<number> {
-		// const buffer = new BigUint64Array(1)
-		// const [random] = crypto.getRandomValues(buffer)
-		// const id = Math.floor(Number(random / 2048n))
-
-		// TODO: try to find available ID somehow less than last?
 		this.index += 1
-		console.log('returned index:', this.index, this.indexName)
+		// console.log('returned index:', this.index, this.indexName)
 		if (this.lastHead) this.writeHead(this.lastHead)
 		return this.index
 	}
@@ -202,7 +197,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 20
+		private order = 30
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -228,7 +223,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
 		const indexDir = await indexesDir.getDirectoryHandle('records', { create: true })
-		this.recordsIndex = new BPTreeAsync(new FileStoreStrategy<string, string>(15, indexDir, this.encoder, 'recordsIndex'), new Comparator())
+		this.recordsIndex = new BPTreeAsync(new FileStoreStrategy<string, string>(80, indexDir, this.encoder, 'recordsIndex'), new Comparator())
 		await this.recordsIndex.init()
 
 		const indexInfo = await readFile(this.recordsRoot, 'lastIndex', 0, this.encoder)
@@ -239,7 +234,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			const indexDir = await indexesDir.getDirectoryHandle(key, { create: true })
 			const tree = new BPTreeAsync(new FileStoreStrategy<string, string>(this.order, indexDir, this.encoder, key), new Comparator())
 			await tree.init()
-			console.log('initted', key)
+
 			this.trees[key as string] = tree
 		}
 	}
@@ -344,39 +339,25 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	async import(records: { id: string; value: T }[]) {
-		await Promise.all([
-			...records.map(async record => {
-				const encoded = this.encoder.encode(record.value)
+		for (const record of records) {
+			const encoded = this.encoder.encode(record.value)
+			const at = this.lastIndex
+			const to = at + encoded.length
+			this.lastIndex = to
 
-				const at = this.lastIndex
-				const to = at + encoded.length
-				this.lastIndex = to
-
-				this.recordsIndex.insert(`${at},${to}`, record.id)
-
-				writeFile(this.recordsRoot, 'records', encoded, false, at, to)
-			}),
-			...Object.keys(this.trees).map(async key => {
-				const tree = this.trees[key]
-				for (const record of records) {
-					const val = record.value[key]
-					if (val === undefined || val === null) continue
-					await tree.insert(record.id, val)
-				}
-			}),
-			// (async () => {
-			// 	for (const record of records) {
-			// 		for (const key in this.trees) {
-			// 			const val = record.value[key]
-			// 			if (val === undefined || val === null) continue
-			// 			const tree = this.trees[key]
-			// 			await tree.insert(record.id, val)
-			// 		}
-			// 	}
-			// })(),
-		])
+			await this.recordsIndex.insert(`${at},${to}`, record.id)
+			await writeFile(this.recordsRoot, 'records', encoded, false, at, to)
+		}
+		for (const key of Object.keys(this.trees)) {
+			const tree = this.trees[key]
+			for (const record of records) {
+				const val = record.value[key]
+				if (val === undefined || val === null) continue
+				await tree.insert(record.id, val)
+			}
+		}
 		await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: this.lastIndex }, this.encoder)
-		await Promise.all(getPendingWritePromises())
+		// await Promise.all(getPendingWritePromises())
 	}
 
 	async insert(id: string, value: T, fullRecord?: boolean) {

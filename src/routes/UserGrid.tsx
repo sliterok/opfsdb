@@ -86,7 +86,7 @@ export default function MainLayout() {
 	})
 
 	const importUsers = useMutation(async () => {
-		for (let i = 0; i < 1; i++) {
+		for (let i = 0; i < 10; i++) {
 			const records = Array(100)
 				.fill(true)
 				.map(() => generateUser())
