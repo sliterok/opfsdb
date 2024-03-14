@@ -127,7 +127,7 @@ const writeFile = async (
 				// if (fileName === 'recordsIndex' && encoded.length !== lengthArray[0]) console.log('lengthArray', encoded, lengthArray[0], fileName)
 				await writable.write(lengthArray, { at: at + pageSize - 2 })
 			} else if (diff < 0) {
-				// console.log(data)
+				console.log(data)
 				throw new Error(`${fileName} pageSize: ${pageSize} less than encoded: ${encoded.length}, diff: ${diff}`)
 			}
 		} else {
@@ -186,7 +186,8 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 }
 
 export class OPFSDB<T extends IBasicRecord> {
-	private recordsIndex!: BPTreeAsync<string, string | number>
+	private recordsIndex!: BPTreeAsync<string, string>
+	private holesIndex!: BPTreeAsync<number, number>
 	private trees: Record<string, BPTreeAsync<string, string | number>> = {}
 	private root!: FileSystemDirectoryHandle
 	private recordsRoot!: FileSystemDirectoryHandle
@@ -197,7 +198,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 30
+		private order = 10
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -223,8 +224,14 @@ export class OPFSDB<T extends IBasicRecord> {
 		const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
 		const indexDir = await indexesDir.getDirectoryHandle('records', { create: true })
-		this.recordsIndex = new BPTreeAsync(new FileStoreStrategy<string, string>(80, indexDir, this.encoder, 'recordsIndex'), new Comparator())
+		this.recordsIndex = new BPTreeAsync<string, string>(
+			new FileStoreStrategy<string, string>(70, indexDir, this.encoder, 'recordsIndex'),
+			new Comparator()
+		)
 		await this.recordsIndex.init()
+
+		this.holesIndex = new BPTreeAsync<number, number>(new FileStoreStrategy(70, indexDir, this.encoder, 'holes'), new Comparator())
+		await this.holesIndex.init()
 
 		const indexInfo = await readFile(this.recordsRoot, 'lastIndex', 0, this.encoder)
 		this.lastIndex = indexInfo?.lastIndex || 0
@@ -321,8 +328,8 @@ export class OPFSDB<T extends IBasicRecord> {
 		// })
 		const promises = ids.map(async id => {
 			const [recordLocation] = await this.recordsIndex.keys({ equal: id })
-			const [start, end] = recordLocation.split(',').map(el => parseInt(el))
-			const file = await readFile(this.recordsRoot, 'records', start, this.encoder, end)
+			const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+			const file = await readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
 			return file
 		})
 		const result = await Promise.all(promises)
@@ -333,19 +340,40 @@ export class OPFSDB<T extends IBasicRecord> {
 	async read(id: string): Promise<T | void> {
 		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
 		if (!recordLocation) return
-		const [start, end] = recordLocation.split(',').map(el => parseInt(el))
-		const file = await readFile(this.recordsRoot, 'records', start, this.encoder, end)
+		const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+		const file = await readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
 		return file
 	}
 
+	async getHole(size: number) {
+		// TODO: limit to 1
+		const [hole] = await this.holesIndex.where({
+			gte: size,
+		})
+		if (!hole) return
+		return [hole.key, hole.value]
+	}
+
 	async import(records: { id: string; value: T }[]) {
+		let indexChanged = false
 		for (const record of records) {
 			const encoded = this.encoder.encode(record.value)
-			const at = this.lastIndex
+			const hole = await this.getHole(encoded.length)
+			const [start, length] = hole || []
+			const at = start || this.lastIndex
 			const to = at + encoded.length
-			this.lastIndex = to
+			if (hole) {
+				await this.holesIndex.delete(start, length)
+				const lengthDiff = length - encoded.length
+				if (lengthDiff > 0) {
+					await this.holesIndex.insert(to, lengthDiff)
+				}
+			} else {
+				indexChanged = true
+				this.lastIndex = to
+			}
 
-			await this.recordsIndex.insert(`${at},${to}`, record.id)
+			await this.recordsIndex.insert(`${at},${encoded.length}`, record.id)
 			await writeFile(this.recordsRoot, 'records', encoded, false, at, to)
 		}
 		for (const key of Object.keys(this.trees)) {
@@ -356,7 +384,7 @@ export class OPFSDB<T extends IBasicRecord> {
 				await tree.insert(record.id, val)
 			}
 		}
-		await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: this.lastIndex }, this.encoder)
+		if (indexChanged) await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: this.lastIndex }, this.encoder)
 		// await Promise.all(getPendingWritePromises())
 	}
 
@@ -369,14 +397,24 @@ export class OPFSDB<T extends IBasicRecord> {
 		const payload = fullRecord || !oldRecord ? value : deepmerge(oldRecord, value)
 		const encoded = this.encoder.encode(payload)
 
-		const at = this.lastIndex
+		const hole = await this.getHole(encoded.length)
+		const [start, length] = hole || []
+
+		const at = start || this.lastIndex
 		const to = at + encoded.length
 
-		this.recordsIndex.insert(`${at},${to}`, id)
-		this.lastIndex = to
+		if (hole) {
+			await this.holesIndex.delete(start, length)
+			const lengthDiff = length - encoded.length
+			if (lengthDiff > 0) {
+				await this.holesIndex.insert(to, lengthDiff)
+			}
+		} else {
+			this.lastIndex = to
+			await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: to }, this.encoder)
+		}
 
-		await writeFile(this.recordsRoot, 'lastIndex', { lastIndex: to }, this.encoder)
-
+		await this.recordsIndex.insert(`${at},${encoded.length}`, id)
 		await writeFile(this.recordsRoot, 'records', encoded, false, at, to)
 
 		if (!oldRecord) {
@@ -416,7 +454,11 @@ export class OPFSDB<T extends IBasicRecord> {
 			const tree = this.trees[key]
 			await tree.delete(id, val)
 		}
-		await this.recordsRoot.removeEntry(id)
+		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
+		if (!recordLocation) return
+		await this.recordsIndex.delete(recordLocation, id)
+		const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+		this.holesIndex.insert(start, length)
 	}
 
 	async drop() {

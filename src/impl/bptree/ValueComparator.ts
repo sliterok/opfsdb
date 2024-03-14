@@ -25,7 +25,7 @@ export class Comparator extends ValueComparator<number | string> {
 		return typeof a === 'number' ? a - (b as number) : a.localeCompare(b as string)
 	}
 
-	match(value: string): string {
-		return value
+	match(value: string | number): string {
+		return value as string
 	}
 }
