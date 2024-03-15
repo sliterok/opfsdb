@@ -18,7 +18,6 @@ import {
 	IEncoder,
 	IQueryOptions,
 	IImportInput,
-	IUnloadInput,
 } from './types'
 import deepmerge from 'deepmerge'
 
@@ -512,8 +511,10 @@ export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<v
 	return tables[tableName].drop()
 }
 
-export const unloadCommand = async ({ tableName }: ICommandInput<IUnloadInput>): Promise<void> => {
-	return tables[tableName].unload()
+export const unloadTables = async () => {
+	for (const table of Object.values(tables)) {
+		table.unload()
+	}
 }
 
 export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>) => {
@@ -541,9 +542,6 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 				break
 			case 'drop':
 				await dropCommand(command as IDropInput)
-				break
-			case 'unload':
-				await unloadCommand(command as IUnloadInput)
 				break
 			default:
 				console.log(command)

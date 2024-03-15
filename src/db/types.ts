@@ -49,7 +49,7 @@ export interface IDropInput extends IBaseInput {
 	name: 'drop'
 }
 
-export interface IUnloadInput extends IBaseInput {
+export interface IUnloadInput {
 	name: 'unload'
 }
 

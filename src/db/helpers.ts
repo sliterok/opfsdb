@@ -1,17 +1,15 @@
 import { BPTreeCondition } from 'src/impl/bptree/BPTree'
 import { IBasicRecord, ICommandInputs } from './types'
+import sharedWorkerUrl from '../workers/shared?sharedworker&url'
+import workerUrl from '../workers/dedicated?worker&url'
 
 let worker: Worker
 
 export function getWorker() {
 	if (!worker) {
-		const sharedWorker = new SharedWorker(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', {
-			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
-		})
+		const sharedWorker = new SharedWorker(sharedWorkerUrl, { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' })
 
-		worker = new Worker(import.meta.env.MODE === 'production' ? 'sw.js' : '/dev-sw.js?dev-sw', {
-			type: import.meta.env.MODE === 'production' ? 'classic' : 'module',
-		})
+		worker = new Worker(workerUrl, { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' })
 
 		worker.postMessage({ workerPort: sharedWorker.port }, [sharedWorker.port])
 
