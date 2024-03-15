@@ -86,8 +86,10 @@ export default function MainLayout() {
 	})
 
 	const importUsers = useMutation(async () => {
-		for (let i = 0; i < 10; i++) {
-			const records = Array(100)
+		const iters = 10
+		for (let i = 0; i < iters; i++) {
+			const count = 1000
+			const records = Array(count)
 				.fill(true)
 				.map(() => generateUser())
 
@@ -97,7 +99,7 @@ export default function MainLayout() {
 				records,
 			})
 			// eslint-disable-next-line no-console
-			console.log('uploading users', (i + 1) * 1000, 'of 10000')
+			console.log(`uploading users ${(i + 1) * count} of ${count * iters}`)
 		}
 	})
 
