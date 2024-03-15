@@ -401,41 +401,36 @@ export class OPFSDB<T extends IBasicRecord> {
 
 	async readFile(dir: FileSystemDirectoryHandle, fileName: string, from = 0, encoder?: IEncoder | false, to?: number) {
 		try {
-			// if (dataMap.has(fileName)) {
-			// 	return dataMap.get(fileName)
-			// }
+			if (isNaN(from)) throw new Error('from is NaN in readFile')
 			const accessHandle = await this.createOrFindHandle(dir, fileName)
-			const uintArray = new Uint8Array(new ArrayBuffer(to ? to - from : accessHandle.getSize()))
-			if (isNaN(from)) throw new Error('from is nan')
-			accessHandle.read(uintArray, { at: from })
-			// accessHandle.close()
-
-			let sliced: Uint8Array
-			if (to && fileName !== 'records') {
-				const sl = uintArray.slice(uintArray.length - 2, uintArray.length)
-				const [index] = new Uint16Array(sl.buffer)
-				if (!index) console.warn("empty reads won't init the structure in memory")
-				sliced = uintArray.slice(0, index)
-			}
-			if (!sliced!) {
-				sliced = uintArray
-				// console.log('decode:', dir.name, fileName, uintArray, sliced)
+			const size = to ? to - from : accessHandle.getSize()
+			let data: Uint8Array
+			if (fileName !== 'records' && to) {
+				const sizeBuffer = new Uint16Array(1)
+				accessHandle.read(sizeBuffer, { at: to - 2 })
+				const [actualSize] = sizeBuffer
+				if (!actualSize) console.warn("empty reads won't init the structure in memory")
+				data = new Uint8Array(new ArrayBuffer(actualSize))
+				accessHandle.read(data, { at: from })
+			} else {
+				data = new Uint8Array(new ArrayBuffer(size))
+				accessHandle.read(data, { at: from })
 			}
 
 			if (encoder === false) {
-				return sliced
+				return data
 			} else if (encoder) {
 				// console.log(`decoding, full ${uintArray.length}, sliced: ${sliced.length}, fileName: ${fileName}`)
-				const tag = encoder.decode(sliced)
+				const tag = encoder.decode(data)
 				const decoded = encoder.decodeKeys(tag)
 				// if (fileName === 'records') console.log('decoded:', decoded)
 				return decoded
 			} else {
-				const decoded = decode(sliced)
+				const decoded = decode(data)
 				return decoded
 			}
 		} catch (error) {
-			if (!(error as DOMException).NOT_FOUND_ERR) console.error(dir.name, fileName, error)
+			if (!(error as DOMException).NOT_FOUND_ERR) console.error(dir.name, fileName, 'read failed', error)
 			return null
 		}
 	}
@@ -449,13 +444,6 @@ export class OPFSDB<T extends IBasicRecord> {
 		pageSize?: number
 	) {
 		try {
-			// if (timeoutMap.has(fileName)) {
-			// 	const timeout = timeoutMap.get(fileName)!
-			// 	clearTimeout(timeout)
-			// }
-			// const fileHandle = await dir.getFileHandle(fileName, { create: true })
-			// const writable = await fileHandle.createSyncAccessHandle()
-
 			const writable = await this.createOrFindHandle(dir, fileName, true)
 
 			let encoded: Uint8Array
@@ -489,7 +477,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			}
 			// await writable.close()
 		} catch (error) {
-			console.error(error, fileName)
+			console.error(dir.name, fileName, 'write failed', error)
 		}
 	}
 }
