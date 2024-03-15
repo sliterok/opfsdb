@@ -402,20 +402,18 @@ export class OPFSDB<T extends IBasicRecord> {
 	async readFile(dir: FileSystemDirectoryHandle, fileName: string, from = 0, encoder?: IEncoder | false, to?: number) {
 		try {
 			if (isNaN(from)) throw new Error('from is NaN in readFile')
+
 			const accessHandle = await this.createOrFindHandle(dir, fileName)
-			const size = to ? to - from : accessHandle.getSize()
-			let data: Uint8Array
+			let size = to ? to - from : accessHandle.getSize()
 			if (fileName !== 'records' && to) {
 				const sizeBuffer = new Uint16Array(1)
 				accessHandle.read(sizeBuffer, { at: to - 2 })
-				const [actualSize] = sizeBuffer
-				if (!actualSize) console.warn("empty reads won't init the structure in memory")
-				data = new Uint8Array(new ArrayBuffer(actualSize))
-				accessHandle.read(data, { at: from })
-			} else {
-				data = new Uint8Array(new ArrayBuffer(size))
-				accessHandle.read(data, { at: from })
+				size = sizeBuffer[0]
+				if (!size) throw new Error("Empty reads won't init the structure in memory")
 			}
+
+			const data = new Uint8Array(new ArrayBuffer(size))
+			accessHandle.read(data, { at: from })
 
 			if (encoder === false) {
 				return data
