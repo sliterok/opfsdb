@@ -2,14 +2,6 @@
 
 import { command, createTableCommand, unloadCommand } from './db/index'
 
-let isMaster = false
-async function init() {
-	isMaster = true
-	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
-}
-let initted: (val: void) => void
-const dedicatedInitted: Promise<void> | void = new Promise(res => (initted = res))
-let dedicatedStarted: Promise<void> | void = undefined
 let masterPort: MessagePort | void = undefined
 const ports = new Set<MessagePort>()
 // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
@@ -35,14 +27,13 @@ self.onconnect = function (e) {
 	port.onmessage = async e => {
 		if (e.data.closing) {
 			ports.delete(port)
-			if (masterPort === port) {
-				migrate()
-			}
+			if (masterPort === port) migrate()
+
 			return
 		}
 		if (masterPort === port) return
 		if (e.data.result || e.data.error) return
-		const p = new Promise<void>(res => {
+		const resultPromise = new Promise<void>(res => {
 			const callback = (response: MessageEvent) => {
 				if (!response.data.result && !response.data.error) return
 				port.postMessage(response.data)
@@ -52,8 +43,9 @@ self.onconnect = function (e) {
 			masterPort!.addEventListener('message', callback)
 			masterPort!.postMessage(e.data)
 		})
-		const t = new Promise(res => setTimeout(res, 10000, true))
-		const shouldMigrate = await Promise.race([p, t])
+		const timeoutPromise = new Promise(res => setTimeout(res, 15000, true))
+
+		const shouldMigrate = await Promise.race([resultPromise, timeoutPromise])
 		if (shouldMigrate) {
 			console.log('master timed out, migrating...')
 			migrate()
@@ -72,6 +64,15 @@ self.onconnect = function (e) {
 	}
 } as SharedWorkerGlobalScope['onconnect']
 
+let isMaster = false
+async function startMaster() {
+	isMaster = true
+	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
+}
+let masterStarted: Promise<void> | void = undefined
+let startSlave: (val: void) => void
+const dedicasterStarted: Promise<void> | void = new Promise(res => (startSlave = res))
+
 let sharedWorkerPort: MessagePort | void = undefined
 // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
 self.onmessage = async req => {
@@ -84,11 +85,11 @@ self.onmessage = async req => {
 		sharedWorkerPort!.start()
 		sharedWorkerPort!.addEventListener('message', async e => {
 			if (e.data.isMaster !== undefined) {
-				initted()
-				if (e.data.isMaster) dedicatedStarted = init()
+				startSlave()
+				if (e.data.isMaster) masterStarted = startMaster()
 			} else if (!e.data.error && !e.data.result) {
 				try {
-					await dedicatedStarted
+					await masterStarted
 					const result = await command(e.data)
 					sharedWorkerPort!.postMessage({ result })
 				} catch (error) {
@@ -97,8 +98,8 @@ self.onmessage = async req => {
 			}
 		})
 	} else {
-		await dedicatedInitted
-		if (!dedicatedStarted) {
+		await dedicasterStarted
+		if (!masterStarted) {
 			const callback = (res: MessageEvent) => {
 				postMessage(res.data)
 				sharedWorkerPort!.removeEventListener('message', callback)
@@ -107,7 +108,7 @@ self.onmessage = async req => {
 			sharedWorkerPort!.postMessage(req.data)
 		} else {
 			try {
-				await dedicatedStarted
+				await masterStarted
 				const result = await command(req.data)
 				postMessage({ result })
 			} catch (error) {
