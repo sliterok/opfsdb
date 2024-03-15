@@ -18,6 +18,7 @@ import {
 	IEncoder,
 	IQueryOptions,
 	IImportInput,
+	IReadManyInput,
 } from './types'
 import deepmerge from 'deepmerge'
 
@@ -86,7 +87,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	private encoder!: IEncoder
 	private keys?: Set<string>
 	private lastIndex!: number
-	private handles = new Map<string, FileSystemSyncAccessHandle>()
+	private handles = new Map<FileSystemDirectoryHandle, Map<string, FileSystemSyncAccessHandle>>()
 
 	constructor(
 		private tableName: string,
@@ -197,15 +198,16 @@ export class OPFSDB<T extends IBasicRecord> {
 	// }
 
 	async readMany(ids: string[]): Promise<T[]> {
-		const promises = ids.map(async id => {
+		const records = Array(ids.length)
+		let i = 0
+		for (const id of ids) {
 			const [recordLocation] = await this.recordsIndex.keys({ equal: id })
 			const [start, length] = recordLocation.split(',').map(el => parseInt(el))
-			const file = await this.readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
-			return file
-		})
-		const result = await Promise.all(promises)
+			const record = await this.readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
+			records[i++] = record
+		}
 
-		return result
+		return records
 	}
 
 	async read(id: string): Promise<T | void> {
@@ -359,19 +361,30 @@ export class OPFSDB<T extends IBasicRecord> {
 	}
 
 	unload() {
-		this.handles.forEach(handle => {
-			handle.flush()
-			handle.close()
+		this.handles.forEach(handles => {
+			for (const handle of handles.values()) {
+				handle.flush()
+				handle.close()
+			}
 		})
 		this.handles.clear()
 	}
 
 	async createOrFindHandle(dir: FileSystemDirectoryHandle, fileName: string, create = false) {
 		const fileHandle = await dir.getFileHandle(fileName, { create })
-		const id = [dir.name, fileName].join('/')
-		if (this.handles.has(id)) return this.handles.get(id)!
+		const handles = this.handles.get(dir)
+		if (handles) {
+			const handle = handles.get(fileName)
+			if (handle) return handle
+		}
+
 		const accessHandle = await fileHandle.createSyncAccessHandle()
-		this.handles.set(id, accessHandle)
+		if (handles) {
+			handles.set(fileName, accessHandle)
+			this.handles.set(dir, handles)
+		} else {
+			this.handles.set(dir, new Map([[fileName, accessHandle]]))
+		}
 		return accessHandle
 	}
 
@@ -404,7 +417,10 @@ export class OPFSDB<T extends IBasicRecord> {
 				return decoded
 			}
 		} catch (error) {
-			if (!(error as DOMException).NOT_FOUND_ERR) console.error(dir.name, fileName, 'read failed', error)
+			const domException = error as DOMException
+			if (domException.code === DOMException.NO_MODIFICATION_ALLOWED_ERR) return this.readFile(dir, fileName, from, encoder, to)
+			else if (domException.code === DOMException.NOT_FOUND_ERR) return null
+			console.error(dir.name, fileName, 'read failed', error)
 			return null
 		}
 	}
@@ -484,6 +500,10 @@ export const readCommand = <T>({ tableName, id }: ICommandInput<IReadInput>): Pr
 	return tables[tableName].read(id)
 }
 
+export const readManyCommand = <T>({ tableName, ids }: ICommandInput<IReadManyInput>): Promise<T[]> => {
+	return tables[tableName].readMany(ids)
+}
+
 export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<void> => {
 	return tables[tableName].drop()
 }
@@ -516,6 +536,9 @@ export const command = async <T extends IBasicRecord>(command: ICommandInputs<T>
 				break
 			case 'read':
 				response = (await readCommand(command as IReadInput)) as T[]
+				break
+			case 'readMany':
+				response = (await readManyCommand(command as IReadManyInput)) as T[]
 				break
 			case 'drop':
 				await dropCommand(command as IDropInput)

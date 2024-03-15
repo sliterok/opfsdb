@@ -22,7 +22,7 @@ export function getWorker() {
 
 export const sendCommand = <Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
 	command: Command
-): Promise<ReturnType[] | void> =>
+): Promise<ReturnType | ReturnType[] | string[] | void> =>
 	new Promise((res, rej) => {
 		const worker = getWorker()
 

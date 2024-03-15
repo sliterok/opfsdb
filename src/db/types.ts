@@ -45,6 +45,11 @@ export interface IReadInput extends IBaseInput {
 	id: string
 }
 
+export interface IReadManyInput extends IBaseInput {
+	name: 'readMany'
+	ids: string[]
+}
+
 export interface IDropInput extends IBaseInput {
 	name: 'drop'
 }
@@ -59,17 +64,13 @@ export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| IInsertInput<T>
 	| IDeleteInput
 	| IReadInput
+	| IReadManyInput
 	| IDropInput
 	| IImportInput
 	| IUnloadInput
 
 export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
 export type IFetchCommandInput<T extends ICommandInputs> = Omit<T, 'tableName' | 'name'>
-export type IFetchDbUrl<T extends ICommandInputs> = `/db/${string}/${T['name']}`
-export type IFetchDb = <T extends ICommandInputs<J>, J extends IBasicRecord = IBasicRecord>(
-	url: IFetchDbUrl<T>,
-	body: IFetchCommandInput<T>
-) => Promise<J[] | void>
 
 export type IBasicRecord = {
 	id: string

@@ -1,24 +1,32 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { useEffect, useState } from 'react'
-import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
+import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
-import { AgGridReact, AgGridReactProps } from 'ag-grid-react'
-import 'ag-grid-community/styles//ag-grid.css'
-import 'ag-grid-community/styles//ag-theme-quartz.css'
 import deepmerge from 'deepmerge'
 import { getQueryFromCondition, sendCommand } from 'src/db/helpers'
 import { diff } from 'deep-object-diff'
+import { styled } from 'styled-components'
+import { DataEditor, GridCell, GridCellKind, Item } from '@glideapps/glide-data-grid'
+import '@mantine/core/styles.layer.css'
+import 'mantine-datatable/styles.layer.css'
+import { DataTable } from 'mantine-datatable'
 
 const chance = new Chance()
 
-const columnDefs: AgGridReactProps['columnDefs'] = [
-	{ headerName: 'ID', field: 'id', filter: true },
-	{ headerName: 'Name', field: 'name', filter: true },
-	{ headerName: 'Surname', field: 'surname', filter: true },
-	{ headerName: 'itemsBought', field: 'itemsBought', filter: true },
-	{ headerName: 'address', field: 'address', filter: true },
+const columnDefs = [
+	{ title: 'ID', accessor: 'id', filter: true },
+	{ title: 'Name', accessor: 'name', filter: true },
+	{ title: 'Surname', accessor: 'surname', filter: true },
+	{ title: 'itemsBought', accessor: 'itemsBought', filter: true },
+	{ title: 'address', accessor: 'address', filter: true },
 ]
+
+const colKeys = columnDefs.map(col => col.id)
+
+const GridContainer = styled.div`
+	/* height: 90svh; */
+`
 
 const generateUser = () => {
 	const [name, surname] = chance.name().split(' ')
@@ -32,36 +40,65 @@ const generateUser = () => {
 }
 
 export default function MainLayout() {
-	const [limit, setLimit] = useState(50)
+	const batchSize = 300
+	const [limit, setLimit] = useState<number | false>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')
 	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
+	const [records, setRecords] = useState<IUser[]>([])
 
-	const usersQuery = useQuery(
-		`users:${typeof window}:${isAndQuery}`,
-		async () => {
-			if (typeof window === 'undefined') return []
+	// const viewportRef = useRef<HTMLDivElement | null>(null)
 
-			try {
-				const command: IQueryInput = {
-					name: 'query',
-					tableName: 'users',
-					query: {
-						name: {
-							like: '%' + searchInput + '%',
-						},
+	const usersQuery = useQuery(`users:${typeof window}:${isAndQuery}`, async () => {
+		if (typeof window === 'undefined') return []
+
+		try {
+			const command: IQueryInput = {
+				name: 'query',
+				tableName: 'users',
+				query: {
+					name: {
+						like: '%' + searchInput + '%',
 					},
-					isAnd: isAndQuery,
-					limit,
+				},
+				isAnd: isAndQuery,
+				limit: limit ? limit : undefined,
+				keys: true,
+			}
+			const users = await sendCommand<IQueryInput, IUser>(queryInput ? deepmerge(command, queryInput) : command)
+			return users as string[]
+		} catch (error) {
+			console.error(error)
+		}
+	})
+
+	const getRecords = useMutation(
+		async (fresh: boolean | void) => {
+			if (fresh || records.length < (usersQuery.data?.length || 0)) {
+				const start = fresh ? 0 : records.length
+				const length = fresh ? Math.max(batchSize, records.length) : batchSize
+				const ids = usersQuery.data!.slice(start, start + length)
+				// console.log(records, ids)
+				const command: IReadManyInput = {
+					name: 'readMany',
+					tableName: 'users',
+					ids,
 				}
-				const users = await sendCommand<IQueryInput, IUser>(queryInput ? deepmerge(command, queryInput) : command)
-				return users as IUser[]
-			} catch (error) {
-				console.error(error)
+				const users = (await sendCommand<IReadManyInput, IUser>(command)) as IUser[]
+				return fresh ? users : [...records, ...users]
 			}
 		},
-		{}
+		{
+			onSuccess: data => {
+				if (data) setRecords(data)
+			},
+		}
 	)
+
+	useEffect(() => {
+		getRecords.mutate(true)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [usersQuery.data])
 
 	const createUser = useMutation(
 		async (record: IUser) => {
@@ -163,59 +200,30 @@ export default function MainLayout() {
 					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
 			</div>
-			<ClientSuspense fallback="Loading grid...">
-				{
-					<div
-						className="ag-theme-quartz"
-						style={{
-							height: '90svh',
-							width: '100%',
-						}}
-					>
-						<AgGridReact
-							columnDefs={columnDefs}
-							rowData={usersQuery.data || []}
-							onFilterModified={e => {
-								const key = e.column.getColId() as keyof IUser
-								const model = e.filterInstance.getModel()
-								if (!model) return
-								let query: IQueryInput<IUser>['query'] | void = undefined
+			<GridContainer>
+				<ClientSuspense fallback="Loading grid...">
+					{
+						<>
+							loaded {records.length}/{usersQuery.data?.length}
+							<DataTable
+								withTableBorder
+								borderRadius="sm"
+								withColumnBorders
+								striped
+								highlightOnHover
+								records={records}
+								height={700}
+								fetching={getRecords.isLoading || usersQuery.isRefetching}
+								onScrollToBottom={() => getRecords.mutate()}
+								scrollAreaProps={{ type: 'auto' }}
+								columns={columnDefs}
+							/>
+						</>
 
-								if (model.operator === 'AND') {
-									query = {
-										[key]: deepmerge.all(
-											model.conditions.map((condition: { type: string; filter: string }) =>
-												getQueryFromCondition(condition.type, condition.filter)
-											)
-										),
-									}
-								} else if (model.operator !== 'OR') {
-									const q = getQueryFromCondition(model.type, model.filter)
-									query = {
-										[key]: q,
-									}
-								}
-
-								if (query?.[key]) {
-									setQueryInput(old => {
-										const upd = {
-											tableName: 'users',
-											query: {
-												...old?.query,
-												...query,
-											},
-										}
-										const diffed = old?.query && diff(old, upd)
-										if (diffed && !Object.keys(diffed).length) return old
-										// console.log(diffed)
-										return upd
-									})
-								}
-							}}
-						></AgGridReact>
-					</div>
-				}
-			</ClientSuspense>
+						// <DataEditor getCellContent={getCellContent} columns={columnDefs} rows={usersQuery.data?.length || 0} />
+					}
+				</ClientSuspense>
+			</GridContainer>
 		</>
 	)
 }

@@ -1,6 +1,7 @@
-import { LayoutProps } from 'rakkasjs'
+import { Head, LayoutProps } from 'rakkasjs'
 import { createGlobalStyle } from 'styled-components'
-
+import '@mantine/core/styles.css'
+import { MantineProvider, ColorSchemeScript } from '@mantine/core'
 const GlobalStyle = createGlobalStyle`
 body {
     margin: 0
@@ -9,7 +10,8 @@ body {
 export default function Layout({ children }: LayoutProps) {
 	return (
 		<>
-			{children}
+			<ColorSchemeScript />
+			<MantineProvider>{children}</MantineProvider>
 			<GlobalStyle />
 		</>
 	)
