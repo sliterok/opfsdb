@@ -197,29 +197,6 @@ export class OPFSDB<T extends IBasicRecord> {
 	// }
 
 	async readMany(ids: string[]): Promise<T[]> {
-		// const promises = batchReduce(ids, 200).map(async ids => {
-		// 	let size = 0
-		// 	const unEncodedData: T[] = []
-		// 	const binaryData = (
-		// 		await Promise.all(
-		// 			ids.map(async id => {
-		// 				const [recordLocation] = await this.recordsIndex.keys({ equal: id })
-		// 				const [start, end] = recordLocation.split(',').map(el => parseInt(el))
-		// 				console.log({ start, end })
-		// 				const file = await readFile(this.recordsRoot, 'records', start, false, end)
-		// 				if (file instanceof Uint8Array) {
-		// 					size += file.length
-		// 					return file
-		// 				} else {
-		// 					unEncodedData.push(file)
-		// 				}
-		// 			})
-		// 		)
-		// 	).filter(file => file) as Uint8Array[]
-		// 	const merged = mergeUint8Arrays(size, ...binaryData)
-		// 	const decoded = this.encoder.decodeMultiple(merged) as T[]
-		// 	return [...unEncodedData, ...decoded]
-		// })
 		const promises = ids.map(async id => {
 			const [recordLocation] = await this.recordsIndex.keys({ equal: id })
 			const [start, length] = recordLocation.split(',').map(el => parseInt(el))
@@ -228,7 +205,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		})
 		const result = await Promise.all(promises)
 
-		return result //.flat()
+		return result
 	}
 
 	async read(id: string): Promise<T | void> {

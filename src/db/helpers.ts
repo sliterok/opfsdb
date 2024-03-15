@@ -70,21 +70,3 @@ export function getQueryFromCondition(type: string, val: string) {
 		[op!]: val,
 	}
 }
-export function batchReduce<T>(arr: T[], batchSize: number): T[][] {
-	return arr.reduce((batches, curr, i) => {
-		if (i % batchSize === 0) batches.push([])
-		batches[batches.length - 1].push(arr[i])
-		return batches
-	}, [] as T[][])
-}
-
-export function mergeUint8Arrays(size: number, ...arrays: Uint8Array[]): Uint8Array {
-	const merged = new Uint8Array(size)
-
-	arrays.forEach((array, i, arrays) => {
-		const offset = arrays.slice(0, i).reduce((acc, e) => acc + e.length, 0)
-		merged.set(array, offset)
-	})
-
-	return merged
-}

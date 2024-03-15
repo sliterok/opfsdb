@@ -17,6 +17,7 @@ const dedicasterStarted: Promise<void> | void = new Promise(res => (startSlave =
 let sharedWorkerPort: MessagePort | void = undefined
 // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
 self.onmessage = async req => {
+	if (req.data.error || req.data.result) return
 	// dedicated worker
 	if (req.data.closing) {
 		if (isMaster) await stopMaster()
@@ -25,10 +26,11 @@ self.onmessage = async req => {
 		sharedWorkerPort = req.data.workerPort
 		sharedWorkerPort!.start()
 		sharedWorkerPort!.addEventListener('message', async e => {
+			if (e.data.error || e.data.result) return
 			if (e.data.isMaster !== undefined) {
 				startSlave()
 				if (e.data.isMaster) masterStarted = startMaster()
-			} else if (!e.data.error && !e.data.result) {
+			} else {
 				try {
 					await masterStarted
 					const result = await command(e.data)
