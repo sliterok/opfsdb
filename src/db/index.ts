@@ -71,7 +71,7 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 }
 
 export class OPFSDB<T extends IBasicRecord> {
-	private recordsIndex!: BPTreeAsync<string, string>
+	private recordsIndex!: BPTreeAsync<Uint8Array, string>
 	private holesIndex!: BPTreeAsync<number, number>
 	private trees: Record<string, BPTreeAsync<string, string | number>> = {}
 	private root!: FileSystemDirectoryHandle
@@ -110,8 +110,8 @@ export class OPFSDB<T extends IBasicRecord> {
 		const indexesDir = await this.root.getDirectoryHandle('index', { create: true })
 
 		const recordsIndexDir = await indexesDir.getDirectoryHandle('records', { create: true })
-		this.recordsIndex = new BPTreeAsync<string, string>(
-			new FileStoreStrategy<string, string>(70, recordsIndexDir, this.encoder, 'recordsIndex', this),
+		this.recordsIndex = new BPTreeAsync<Uint8Array, string>(
+			new FileStoreStrategy<Uint8Array, string>(70, recordsIndexDir, this.encoder, 'recordsIndex', this),
 			new Comparator()
 		)
 		await this.recordsIndex.init()
@@ -195,7 +195,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		let i = 0
 		for (const id of ids) {
 			const [recordLocation] = await this.recordsIndex.keys({ equal: id })
-			const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+			const [start, length] = this.decodeLocation(recordLocation)
 			const record = await this.readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
 			records[i++] = record
 		}
@@ -206,7 +206,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	async read(id: string): Promise<T | void> {
 		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
 		if (!recordLocation) return
-		const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+		const [start, length] = this.decodeLocation(recordLocation)
 		const file = await this.readFile(this.recordsRoot, 'records', start, this.encoder, start + length)
 		return file
 	}
@@ -244,7 +244,7 @@ export class OPFSDB<T extends IBasicRecord> {
 				this.lastIndex = to
 			}
 
-			await this.recordsIndex.insert(`${at},${encoded.length}`, record.id)
+			await this.recordsIndex.insert(this.encodeLocation(at, encoded.length), record.id)
 			await this.writeFile(this.recordsRoot, 'records', encoded, false, at, to)
 		}
 		for (const key of Object.keys(this.trees)) {
@@ -261,7 +261,7 @@ export class OPFSDB<T extends IBasicRecord> {
 
 	async insert(id: string, value: T, fullRecord?: boolean) {
 		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
-		const [oldStart, oldLength] = recordLocation ? recordLocation.split(',').map(el => parseInt(el)) : []
+		const [oldStart, oldLength] = this.decodeLocation(recordLocation)
 		const oldRecord = recordLocation && (await this.readFile(this.recordsRoot, 'records', oldStart, this.encoder, oldStart + oldLength))
 
 		const payload = fullRecord || !oldRecord ? value : deepmerge(oldRecord, value)
@@ -276,7 +276,7 @@ export class OPFSDB<T extends IBasicRecord> {
 			if (hole) {
 				if (recordLocation) {
 					moved = true
-					await this.recordsIndex.delete(`${oldStart},${oldLength}`, id)
+					await this.recordsIndex.delete(this.encodeLocation(oldStart, oldLength), id)
 					await this.holesIndex.insert(oldStart, oldLength)
 				}
 				start = hole[0]
@@ -294,9 +294,9 @@ export class OPFSDB<T extends IBasicRecord> {
 			await this.writeFile(this.recordsRoot, 'lastIndex', { lastIndex: to }, this.encoder)
 		}
 		if (!moved && recordLocation && oldLength !== encoded.length) {
-			await this.recordsIndex.delete(`${oldStart},${oldLength}`, id)
+			await this.recordsIndex.delete(this.encodeLocation(oldStart, oldLength), id)
 		}
-		await this.recordsIndex.insert(`${at},${encoded.length}`, id)
+		await this.recordsIndex.insert(this.encodeLocation(at, encoded.length), id)
 
 		await this.writeFile(this.recordsRoot, 'records', encoded, false, at, to)
 
@@ -338,7 +338,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		const [recordLocation] = await this.recordsIndex.keys({ equal: id })
 		if (!recordLocation) return
 		await this.recordsIndex.delete(recordLocation, id)
-		const [start, length] = recordLocation.split(',').map(el => parseInt(el))
+		const [start, length] = this.decodeLocation(recordLocation)
 		this.holesIndex.insert(start, length)
 	}
 
@@ -379,6 +379,15 @@ export class OPFSDB<T extends IBasicRecord> {
 			this.handles.set(dir, new Map([[fileName, accessHandle]]))
 		}
 		return accessHandle
+	}
+
+	private encodeLocation(at: number, length: number): Uint8Array {
+		return this.encoder.encode([at, length])
+	}
+
+	private decodeLocation(val?: Uint8Array) {
+		if (!val) return []
+		return this.encoder.decode(val)
 	}
 
 	async readFile(dir: FileSystemDirectoryHandle, fileName: string, from = 0, encoder?: IEncoder | false, to?: number) {
