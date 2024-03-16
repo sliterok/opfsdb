@@ -41,6 +41,7 @@ self.onmessage = async req => {
 			}
 		})
 	} else {
+		const { command: payload, port } = req.data
 		await dedicasterStarted
 		if (!masterStarted) {
 			const callback = (res: MessageEvent) => {
@@ -48,14 +49,14 @@ self.onmessage = async req => {
 				sharedWorkerPort!.removeEventListener('message', callback)
 			}
 			sharedWorkerPort!.addEventListener('message', callback)
-			sharedWorkerPort!.postMessage(req.data)
+			sharedWorkerPort!.postMessage(payload)
 		} else {
 			try {
 				await masterStarted
-				const result = await command(req.data)
-				postMessage({ result })
+				const result = await command(payload)
+				port.postMessage({ result })
 			} catch (error) {
-				postMessage({ error })
+				port.postMessage({ error })
 			}
 		}
 	}

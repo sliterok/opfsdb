@@ -1,31 +1,21 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadInput, IReadManyInput } from 'src/db/types'
+import { ComponentType, JSXElementConstructor, Key, ReactElement, ReactNode, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
+import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import deepmerge from 'deepmerge'
-import { getQueryFromCondition, sendCommand } from 'src/db/helpers'
-import { diff } from 'deep-object-diff'
+import { batchReduce, sendCommand } from 'src/db/helpers'
 import { styled } from 'styled-components'
-import { DataEditor, GridCell, GridCellKind, Item } from '@glideapps/glide-data-grid'
-import '@mantine/core/styles.layer.css'
-import 'mantine-datatable/styles.layer.css'
-import { DataTable } from 'mantine-datatable'
+import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
+import { Facebook } from 'react-content-loader'
+import { Page } from './Page'
 
 const chance = new Chance()
 
-const columnDefs = [
-	{ title: 'ID', accessor: 'id', filter: true },
-	{ title: 'Name', accessor: 'name', filter: true },
-	{ title: 'Surname', accessor: 'surname', filter: true },
-	{ title: 'itemsBought', accessor: 'itemsBought', filter: true },
-	{ title: 'address', accessor: 'address', filter: true },
-]
-
-const colKeys = columnDefs.map(col => col.id)
-
 const GridContainer = styled.div`
-	/* height: 90svh; */
+	height: 95svh;
+	overflow-y: auto;
+	width: 100svw;
 `
 
 const generateUser = () => {
@@ -39,17 +29,21 @@ const generateUser = () => {
 	}
 }
 
+const Skeleton = () => {
+	return <Facebook style={{ height: '300px', display: 'block' }} />
+}
+
+const HeadCell = styled.th`
+	min-width: 100px;
+`
+const batchSize = 50
 export default function MainLayout() {
-	const batchSize = 300
 	const [limit, setLimit] = useState<number | false>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')
 	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
-	const [records, setRecords] = useState<IUser[]>([])
 
-	// const viewportRef = useRef<HTMLDivElement | null>(null)
-
-	const usersQuery = useQuery(`users:${typeof window}:${isAndQuery}`, async () => {
+	const userKeysQuery = useQuery(`usersKeys:${typeof window}:${isAndQuery}`, async () => {
 		if (typeof window === 'undefined') return []
 
 		try {
@@ -72,34 +66,6 @@ export default function MainLayout() {
 		}
 	})
 
-	const getRecords = useMutation(
-		async (fresh: boolean | void) => {
-			if (fresh || records.length < (usersQuery.data?.length || 0)) {
-				const start = fresh ? 0 : records.length
-				const length = fresh ? Math.max(batchSize, records.length) : batchSize
-				const ids = usersQuery.data!.slice(start, start + length)
-				// console.log(records, ids)
-				const command: IReadManyInput = {
-					name: 'readMany',
-					tableName: 'users',
-					ids,
-				}
-				const users = (await sendCommand<IReadManyInput, IUser>(command)) as IUser[]
-				return fresh ? users : [...records, ...users]
-			}
-		},
-		{
-			onSuccess: data => {
-				if (data) setRecords(data)
-			},
-		}
-	)
-
-	useEffect(() => {
-		getRecords.mutate(true)
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [usersQuery.data])
-
 	const createUser = useMutation(
 		async (record: IUser) => {
 			await sendCommand<IInsertInput<IUser>, IUser>({
@@ -110,7 +76,7 @@ export default function MainLayout() {
 		},
 		{
 			onSettled() {
-				usersQuery.refetch()
+				userKeysQuery.refetch()
 			},
 		}
 	)
@@ -142,18 +108,101 @@ export default function MainLayout() {
 
 	useEffect(() => {
 		const delayDebounceFn = setTimeout(() => {
-			usersQuery.refetch()
+			userKeysQuery.refetch()
 		}, 60)
 
 		return () => clearTimeout(delayDebounceFn)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [searchInput, queryInput])
 
+	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
+	const heavyComps = useMemo(
+		() =>
+			pages.map(() =>
+				lazy(
+					() =>
+						new Promise<{
+							default: ComponentType<Parameters<typeof Page>[0]>
+							// eslint-disable-next-line no-async-promise-executor
+						}>(async resolve => {
+							resolve({
+								default: Page,
+							})
+						})
+				)
+			),
+		[pages]
+	)
+	const TABLE_HEADER_HEIGHT = 30
+
+	const Table = forwardRef<HTMLTableElement, CustomContainerComponentProps>(({ children, style }, ref) => {
+		return (
+			<table
+				ref={ref}
+				style={{
+					height: ((style?.height as number) || 0) + TABLE_HEADER_HEIGHT,
+					width: '100%',
+					position: 'relative',
+					tableLayout: 'fixed',
+					borderCollapse: 'collapse',
+					whiteSpace: 'nowrap',
+					border: 0,
+				}}
+				border={1}
+			>
+				<thead
+					style={{
+						position: 'sticky',
+						top: 0,
+						zIndex: 1,
+						height: TABLE_HEADER_HEIGHT,
+						minHeight: TABLE_HEADER_HEIGHT,
+						maxHeight: TABLE_HEADER_HEIGHT,
+						background: '#fff',
+					}}
+				>
+					<tr>
+						<HeadCell>index</HeadCell>
+						<HeadCell>id</HeadCell>
+						<HeadCell>name</HeadCell>
+						<HeadCell>surname</HeadCell>
+						<HeadCell>address</HeadCell>
+						<HeadCell>orders</HeadCell>
+					</tr>
+				</thead>
+				{children}
+			</table>
+		)
+	})
+
+	const Item = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => {
+		const { style, index, children } = props
+		return (
+			<tbody
+				key={index}
+				style={{
+					...style,
+					contain: undefined,
+					position: 'absolute',
+					left: 0,
+					display: 'table',
+					top: ((style.top as number) || 0) + TABLE_HEADER_HEIGHT,
+				}}
+				ref={ref}
+			>
+				{children}
+			</tbody>
+		)
+	})
+	Item.displayName = 'item'
+
+	Table.displayName = 'table'
+
 	return (
 		<>
-			<div style={{ height: '10svh', display: 'flex', gap: '1em' }}>
+			<div style={{ height: '5svh', display: 'flex', gap: '1em' }}>
 				<div>
-					<button onClick={() => usersQuery.refetch()}>refetch</button>
+					<button onClick={() => userKeysQuery.refetch()}>refetch</button>
 				</div>
 				<div>
 					<button
@@ -183,7 +232,7 @@ export default function MainLayout() {
 					<input
 						value={searchInput}
 						onChange={e => setSearchInput(e.target.value)}
-						onKeyDown={e => e.key === 'Enter' && usersQuery.refetch()}
+						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
 					/>
 				</div>
 				<div>
@@ -192,7 +241,7 @@ export default function MainLayout() {
 						type="number"
 						value={limit}
 						onChange={e => setLimit(e.target.valueAsNumber)}
-						onKeyDown={e => e.key === 'Enter' && usersQuery.refetch()}
+						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
 					/>
 				</div>
 				<div>
@@ -200,30 +249,29 @@ export default function MainLayout() {
 					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
 			</div>
-			<GridContainer>
-				<ClientSuspense fallback="Loading grid...">
-					{
-						<>
-							loaded {records.length}/{usersQuery.data?.length}
-							<DataTable
-								withTableBorder
-								borderRadius="sm"
-								withColumnBorders
-								striped
-								highlightOnHover
-								records={records}
-								height={700}
-								fetching={getRecords.isLoading || usersQuery.isRefetching}
-								onScrollToBottom={() => getRecords.mutate()}
-								scrollAreaProps={{ type: 'auto' }}
-								columns={columnDefs}
-							/>
-						</>
-
-						// <DataEditor getCellContent={getCellContent} columns={columnDefs} rows={usersQuery.data?.length || 0} />
-					}
-				</ClientSuspense>
-			</GridContainer>
+			<ClientSuspense fallback="Loading grid...">
+				{
+					<GridContainer>
+						<Virtualizer item={Item} as={Table} startMargin={TABLE_HEADER_HEIGHT}>
+							{heavyComps.map((HeavyComp, i) => (
+								<Suspense
+									key={i}
+									fallback={
+										<tr style={{ height: `${batchSize * 1.3725}em`, verticalAlign: 'top' }}>
+											<HeadCell>
+												<div>loading...</div>
+												<Skeleton />
+											</HeadCell>
+										</tr>
+									}
+								>
+									<HeavyComp ids={pages[i]} startIndex={i * batchSize} queryKey={userKeysQuery.dataUpdatedAt || 0} />
+								</Suspense>
+							))}
+						</Virtualizer>
+					</GridContainer>
+				}
+			</ClientSuspense>
 		</>
 	)
 }

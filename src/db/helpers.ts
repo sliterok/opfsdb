@@ -26,15 +26,18 @@ export const sendCommand = <Command extends ICommandInputs<ReturnType>, ReturnTy
 	new Promise((res, rej) => {
 		const worker = getWorker()
 
-		worker.onmessage = ({ data }) => {
+		const channel = new MessageChannel()
+
+		channel.port2.onmessage = ({ data }) => {
 			if (data.error) {
 				rej(data.error)
 			} else {
 				res(data.result)
+				channel.port2.close()
 			}
 		}
 
-		worker.postMessage(command)
+		worker.postMessage({ port: channel.port1, command }, [channel.port1])
 	})
 
 export function getQueryFromCondition(type: string, val: string) {
@@ -69,4 +72,12 @@ export function getQueryFromCondition(type: string, val: string) {
 	return {
 		[op!]: val,
 	}
+}
+
+export function batchReduce<T>(arr: T[], batchSize: number): T[][] {
+	return arr.reduce((batches, curr, i) => {
+		if (i % batchSize === 0) batches.push([])
+		batches[batches.length - 1].push(arr[i])
+		return batches
+	}, [] as T[][])
 }

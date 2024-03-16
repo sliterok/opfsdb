@@ -92,7 +92,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 40
+		private order = 15
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
