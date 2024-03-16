@@ -1,17 +1,21 @@
+/* eslint-disable react/display-name */
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
+import { ComponentType, InputHTMLAttributes, ReactNode, Ref, Suspense, forwardRef, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import deepmerge from 'deepmerge'
 import { batchReduce, sendCommand } from 'src/db/helpers'
 import { styled } from 'styled-components'
-import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
+import { CustomContainerComponentProps, CustomContainerComponent, CustomItemComponentProps, Virtualizer, CustomItemComponent } from 'virtua'
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
 import Just from 'just-cache'
 import { Button } from 'src/common/button'
 import { Input } from 'src/common/input'
+import { createEvent, createStore } from 'effector'
+import { useUnit } from 'effector-react'
+import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 
 const chance = new Chance()
 
@@ -55,30 +59,132 @@ const cache = new Just({
 	ttl: 300, // 5min
 	limit: 100_000_000, //100mb
 })
+
+const TABLE_HEADER_HEIGHT = 30
+
+type ITableProps = CustomContainerComponentProps & {
+	innerRef: Ref<HTMLTableElement>
+}
+
+type ISearchInput = Record<string, string | number>
+
+const $searchInput = createStore<ISearchInput>({})
+const setSearchInput = createEvent<[string | number | void, string]>()
+$searchInput.on(setSearchInput, (old, [input, key]) => {
+	if (input === undefined) {
+		delete old[key]
+		return old
+	}
+	return { ...old, [key]: input }
+})
+
+function Table({ children, style, innerRef }: ITableProps) {
+	const searchInput = useUnit($searchInput)
+	return (
+		<table
+			ref={innerRef}
+			style={{
+				height: ((style?.height as number) || 0) + TABLE_HEADER_HEIGHT,
+				width: '100%',
+				position: 'relative',
+				tableLayout: 'fixed',
+				borderCollapse: 'collapse',
+				whiteSpace: 'nowrap',
+				border: 0,
+			}}
+			border={1}
+		>
+			<thead
+				key={-1}
+				style={{
+					position: 'sticky',
+					top: 0,
+					zIndex: 1,
+					height: TABLE_HEADER_HEIGHT,
+					minHeight: TABLE_HEADER_HEIGHT,
+					maxHeight: TABLE_HEADER_HEIGHT,
+					background: '#fff',
+				}}
+			>
+				<tr>
+					<HeadCell>index</HeadCell>
+					<HeadCell>id</HeadCell>
+					<HeadCell>
+						<Input placeholder="Name" value={searchInput.name || ''} onChange={e => setSearchInput([e.target.value, 'name'])} />
+					</HeadCell>
+					<HeadCell>
+						<Input placeholder="Surname" value={searchInput.surname || ''} onChange={e => setSearchInput([e.target.value, 'surname'])} />
+					</HeadCell>
+					<HeadCell>
+						<Input placeholder="Address" value={searchInput.address || ''} onChange={e => setSearchInput([e.target.value, 'address'])} />
+					</HeadCell>
+					<HeadCell>
+						<Input
+							type="number"
+							placeholder="Orders"
+							value={searchInput.orders || ''}
+							onChange={e => setSearchInput([e.target.valueAsNumber, 'orders'])}
+						/>
+					</HeadCell>
+				</tr>
+			</thead>
+			{children}
+		</table>
+	)
+}
+const TableRef = forwardRef<HTMLTableElement, CustomContainerComponentProps>((props, ref) => <Table innerRef={ref} {...props} />)
+
+type IItemProps = CustomItemComponentProps & {
+	innerRef: Ref<HTMLTableSectionElement>
+}
+function Item(props: IItemProps) {
+	const { style, index, children, innerRef } = props
+	return (
+		<tbody
+			ref={innerRef}
+			key={index}
+			style={{
+				...style,
+				contain: undefined,
+				position: 'absolute',
+				left: 0,
+				display: 'table',
+				top: ((style.top as number) || 0) + TABLE_HEADER_HEIGHT,
+			}}
+		>
+			{children}
+		</tbody>
+	)
+}
+
+const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => <Item innerRef={ref} {...props} />)
+
 export default function MainLayout() {
+	const searchInput = useUnit($searchInput)
 	const [limit, setLimit] = useState<number | false>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
-	const [searchInput, setSearchInput] = useState('')
-	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
 	const [importStatus, setImportStatus] = useState('')
 
 	const userKeysQuery = useQuery(`usersKeys:${typeof window}:${isAndQuery}`, async () => {
 		if (typeof window === 'undefined') return []
 
 		try {
+			const query: Record<string, BPTreeCondition<string | number>> = {}
+			for (const key in searchInput) {
+				const val = searchInput[key]
+				if (!val) continue
+				query[key] = key === 'orders' ? { equal: val } : { like: '%' + val + '%' }
+			}
+
 			const command: IQueryInput = {
 				name: 'query',
 				tableName: 'users',
-				query: {
-					name: {
-						like: '%' + searchInput + '%',
-					},
-				},
+				query,
 				isAnd: isAndQuery,
 				limit: limit ? limit : undefined,
 				keys: true,
 			}
-			const users = await sendCommand<IQueryInput, IUser>(queryInput ? deepmerge(command, queryInput) : command)
+			const users = await sendCommand<IQueryInput, IUser>(command)
 			return users as string[]
 		} catch (error) {
 			console.error(error)
@@ -132,7 +238,7 @@ export default function MainLayout() {
 
 		return () => clearTimeout(delayDebounceFn)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [searchInput, queryInput])
+	}, [searchInput])
 
 	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
 	const heavyComps = useMemo(
@@ -166,70 +272,6 @@ export default function MainLayout() {
 			),
 		[pages]
 	)
-	const TABLE_HEADER_HEIGHT = 30
-
-	const Table = forwardRef<HTMLTableElement, CustomContainerComponentProps>(({ children, style }, ref) => {
-		return (
-			<table
-				ref={ref}
-				style={{
-					height: ((style?.height as number) || 0) + TABLE_HEADER_HEIGHT,
-					width: '100%',
-					position: 'relative',
-					tableLayout: 'fixed',
-					borderCollapse: 'collapse',
-					whiteSpace: 'nowrap',
-					border: 0,
-				}}
-				border={1}
-			>
-				<thead
-					style={{
-						position: 'sticky',
-						top: 0,
-						zIndex: 1,
-						height: TABLE_HEADER_HEIGHT,
-						minHeight: TABLE_HEADER_HEIGHT,
-						maxHeight: TABLE_HEADER_HEIGHT,
-						background: '#fff',
-					}}
-				>
-					<tr>
-						<HeadCell>index</HeadCell>
-						<HeadCell>id</HeadCell>
-						<HeadCell>name</HeadCell>
-						<HeadCell>surname</HeadCell>
-						<HeadCell>address</HeadCell>
-						<HeadCell>orders</HeadCell>
-					</tr>
-				</thead>
-				{children}
-			</table>
-		)
-	})
-
-	const Item = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => {
-		const { style, index, children } = props
-		return (
-			<tbody
-				key={index}
-				style={{
-					...style,
-					contain: undefined,
-					position: 'absolute',
-					left: 0,
-					display: 'table',
-					top: ((style.top as number) || 0) + TABLE_HEADER_HEIGHT,
-				}}
-				ref={ref}
-			>
-				{children}
-			</tbody>
-		)
-	})
-	Item.displayName = 'item'
-
-	Table.displayName = 'table'
 
 	return (
 		<GlobalContainer>
@@ -262,14 +304,6 @@ export default function MainLayout() {
 					Drop table
 				</Button>
 				<div>
-					<div>Search in name</div>
-					<Input
-						value={searchInput}
-						onChange={e => setSearchInput(e.target.value)}
-						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
-					/>
-				</div>
-				<div>
 					<div>Limit</div>
 					<Input
 						type="number"
@@ -286,7 +320,7 @@ export default function MainLayout() {
 			<ClientSuspense fallback="Loading grid...">
 				{
 					<GridContainer>
-						<Virtualizer item={Item} as={Table} startMargin={TABLE_HEADER_HEIGHT}>
+						<Virtualizer item={ItemRef} as={TableRef} startMargin={TABLE_HEADER_HEIGHT}>
 							{heavyComps.map((HeavyComp, i) => (
 								<Suspense
 									key={i}

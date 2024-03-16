@@ -26,6 +26,12 @@ dependencies:
   deepmerge:
     specifier: ^4.3.1
     version: 4.3.1
+  effector:
+    specifier: ^23.2.0
+    version: 23.2.0
+  effector-react:
+    specifier: ^23.2.0
+    version: 23.2.0(effector@23.2.0)(react@18.2.0)
   just-cache:
     specifier: ^1.6.7
     version: 1.6.7
@@ -1999,6 +2005,23 @@ packages:
       domhandler: 5.0.3
     dev: true
 
+  /effector-react@23.2.0(effector@23.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-e7tWJ+lpVKJpzS0UDR2Oi/0dAfvyDYyT44CWIFzBd8aJ7u4VXqP/3RJ4GCa3sH2g8Wffx6IA3BuTUGvgeH8ypg==}
+    engines: {node: '>=11.0.0'}
+    peerDependencies:
+      effector: ^23.0.0
+      react: '>=16.8.0 <19.0.0'
+    dependencies:
+      effector: 23.2.0
+      react: 18.2.0
+      use-sync-external-store: 1.2.0(react@18.2.0)
+    dev: false
+
+  /effector@23.2.0:
+    resolution: {integrity: sha512-TqR/e5BSfAk4ZkHOykmqPmT9Nn4fLE/BhuBiVmy2cb7Vp6in8N+xMDFhWWZAgOdQjehgt/dIVQyXuWpXh3EoZA==}
+    engines: {node: '>=11.0.0'}
+    dev: false
+
   /electron-to-chromium@1.4.698:
     resolution: {integrity: sha512-f9iZD1t3CLy1AS6vzM5EKGa6p9pRcOeEFXRFbaG2Ta+Oe7MkfRQ3fsvPYidzHe1h4i0JvIvpcY55C+B6BZNGtQ==}
     dev: true
@@ -3908,6 +3931,14 @@ packages:
   /urlpattern-polyfill@10.0.0:
     resolution: {integrity: sha512-H/A06tKD7sS1O1X2SshBVeA5FLycRpjqiBeqGKmBwBDBy28EnRjORxTNe269KSSr5un5qyWi1iL61wLxpd+ZOg==}
     dev: true
+
+  /use-sync-external-store@1.2.0(react@18.2.0):
+    resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
+    dev: false
 
   /virtua@0.29.0(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-V7gxQDUGgxe32cLyYhZ+hOxtZLuqKV9icqomE8qAN5HILf1TMuisCEZJVbr+k7GI7K+oOkYdKFiBX23cdXSXmg==}

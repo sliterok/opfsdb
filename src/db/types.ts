@@ -26,8 +26,7 @@ export interface IQueryOptions {
 
 export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBaseInput, IQueryOptions {
 	name: 'query'
-	query: //Record<keyof T, BPTreeCondition<string | number> | never>
-	{
+	query: {
 		[key in keyof T]?: BPTreeCondition<string | number> | never
 	}
 }

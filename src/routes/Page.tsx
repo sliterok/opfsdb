@@ -3,6 +3,7 @@ import { IUser } from 'src/types'
 import { styled } from 'styled-components'
 
 interface IPageProps {
+	ref: typeof Fragment
 	users: IUser[]
 	startIndex: number
 }
@@ -15,7 +16,7 @@ export function Page(props: IPageProps) {
 	return (
 		<Fragment>
 			{props.users.map((user, i) => (
-				<tr key={user.id}>
+				<tr key={user.id} ref={props.ref}>
 					<TableCell>{props.startIndex + i + 1}</TableCell>
 					<TableCell>{user.id}</TableCell>
 					<TableCell>{user.name}</TableCell>

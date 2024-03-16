@@ -32,6 +32,8 @@
     "chance": "^1.1.11",
     "deep-object-diff": "^1.1.9",
     "deepmerge": "^4.3.1",
+    "effector": "^23.2.0",
+    "effector-react": "^23.2.0",
     "just-cache": "^1.6.7",
     "react": "^18.2.0",
     "react-content-loader": "^7.0.0",

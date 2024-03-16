@@ -5,7 +5,7 @@ import { command, createTableCommand, unloadTables } from '../db/index'
 let isMaster = false
 async function startMaster() {
 	isMaster = true
-	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'itemsBought', 'address'] })
+	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'orders', 'address'] })
 }
 async function stopMaster() {
 	await unloadTables()
