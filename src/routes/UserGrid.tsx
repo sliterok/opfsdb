@@ -313,6 +313,10 @@ export default function MainLayout() {
 					/>
 				</div>
 				<div>
+					<div>{userKeysQuery.data?.length}</div>
+					<div>results</div>
+				</div>
+				<div>
 					<div>and</div>
 					<Input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
