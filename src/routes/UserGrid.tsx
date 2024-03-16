@@ -155,7 +155,8 @@ function Item(props: IItemProps) {
 
 const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => <Item innerRef={ref} {...props} />)
 
-const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, ref) => <Page {...props} ref={ref} />)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, _ref) => <Page {...props} />)
 
 export default function MainLayout() {
 	const searchInput = useUnit($searchInput)
@@ -239,104 +240,110 @@ export default function MainLayout() {
 	}, [searchInput])
 
 	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
-	const heavyComps = useMemo(
+	useEffect(() => cache.clean(), [pages])
+	const asyncPages = useMemo(
 		() =>
-			pages.map(ids => ({
-				ids,
-				LoadedPage: lazy(
-					() =>
-						new Promise<{
-							default: ComponentType<Omit<Parameters<typeof Page>[0], 'users'>>
-							// eslint-disable-next-line no-async-promise-executor
-						}>(async resolve => {
-							const restoredUsers = cache.get(ids.join(',')) as IUser[] | void
-							const users =
-								restoredUsers ||
-								((await sendCommand<IReadManyInput, IUser>({
-									name: 'readMany',
-									tableName: 'users',
-									ids,
-								})) as IUser[])
-							if (!restoredUsers) cache.set(ids.join(','), users)
-							// console.log(props.startIndex, ids.length, users.length)
-							resolve({
-								default: LoadedPage,
+			pages.map(ids => {
+				const queryKey = ids.join(',')
+				return {
+					queryKey,
+					LoadedPage: lazy(
+						() =>
+							new Promise<{
+								default: ComponentType<Omit<Parameters<typeof Page>[0], 'users'>>
+								// eslint-disable-next-line no-async-promise-executor
+							}>(async resolve => {
+								const restoredUsers = cache.get(queryKey) as IUser[] | void
+								const users =
+									restoredUsers ||
+									((await sendCommand<IReadManyInput, IUser>({
+										name: 'readMany',
+										tableName: 'users',
+										ids,
+									})) as IUser[])
+								if (!restoredUsers) cache.set(queryKey, users)
+								// console.log(props.startIndex, ids.length, users.length)
+								resolve({
+									default: LoadedPage,
+								})
 							})
-						})
-				),
-			})),
+					),
+				}
+			}),
 		[pages]
 	)
 
 	return (
 		<GlobalContainer>
-			<HeaderContainer>
-				<Button disabled={userKeysQuery.isRefetching} onClick={() => userKeysQuery.refetch()}>
-					Refetch
-				</Button>
-				<Button
-					disabled={createUser.isLoading}
-					onClick={() => {
-						createUser.mutate(generateUser())
-					}}
-				>
-					Add user
-				</Button>
-				<Button
-					disabled={importUsers.isLoading}
-					onClick={() => {
-						importUsers.mutate()
-					}}
-				>
-					{importUsers.isLoading ? importStatus || 'Uploading...' : 'Add 10k users'}
-				</Button>
-				<Button
-					disabled={dropTable.isLoading}
-					onClick={() => {
-						dropTable.mutate()
-					}}
-				>
-					Drop table
-				</Button>
-				<div>
-					<div>Limit</div>
-					<Input
-						type="number"
-						value={limit === undefined ? '' : limit}
-						onChange={e => setLimit(e.target.valueAsNumber)}
-						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
-					/>
-				</div>
-				<div>
-					<div>{userKeysQuery.data?.length}</div>
-					<div>results</div>
-				</div>
-				<div>
-					<div>and</div>
-					<Input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
-				</div>
-			</HeaderContainer>
 			<ClientSuspense fallback="Loading grid...">
 				{
-					<GridContainer>
-						<Virtualizer item={ItemRef} as={TableRef} startMargin={TABLE_HEADER_HEIGHT}>
-							{heavyComps.map(({ ids, LoadedPage }, i) => (
-								<Suspense
-									key={i}
-									fallback={
-										<tr style={{ height: `${batchSize * 1.3725}em`, verticalAlign: 'top' }}>
-											<HeadCell>
-												<div>loading...</div>
-												<Skeleton />
-											</HeadCell>
-										</tr>
-									}
-								>
-									<LoadedPage startIndex={i * batchSize} queryKey={ids.join(',')} />
-								</Suspense>
-							))}
-						</Virtualizer>
-					</GridContainer>
+					<>
+						<HeaderContainer>
+							<Button disabled={userKeysQuery.isRefetching} onClick={() => userKeysQuery.refetch()}>
+								Refetch
+							</Button>
+							<Button
+								disabled={createUser.isLoading}
+								onClick={() => {
+									createUser.mutate(generateUser())
+								}}
+							>
+								Add user
+							</Button>
+							<Button
+								disabled={importUsers.isLoading}
+								onClick={() => {
+									importUsers.mutate()
+								}}
+							>
+								{importUsers.isLoading ? importStatus || 'Uploading...' : 'Add 10k users'}
+							</Button>
+							<Button
+								disabled={dropTable.isLoading}
+								onClick={() => {
+									dropTable.mutate()
+								}}
+							>
+								Drop table
+							</Button>
+							<div>
+								<div>Limit</div>
+								<Input
+									type="number"
+									value={limit === undefined ? '' : limit}
+									onChange={e => setLimit(e.target.valueAsNumber)}
+									onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
+								/>
+							</div>
+							<div>
+								<div>{userKeysQuery.data?.length || 0}</div>
+								<div>results</div>
+							</div>
+							<div>
+								<div>and</div>
+								<Input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
+							</div>
+						</HeaderContainer>
+						<GridContainer>
+							<Virtualizer item={ItemRef} as={TableRef} startMargin={TABLE_HEADER_HEIGHT}>
+								{asyncPages.map(({ queryKey, LoadedPage }, i) => (
+									<Suspense
+										key={i}
+										fallback={
+											<tr style={{ height: `${batchSize * 1.3725}em`, verticalAlign: 'top' }}>
+												<HeadCell>
+													<div>loading...</div>
+													<Skeleton />
+												</HeadCell>
+											</tr>
+										}
+									>
+										<LoadedPage startIndex={i * batchSize} queryKey={queryKey} />
+									</Suspense>
+								))}
+							</Virtualizer>
+						</GridContainer>
+					</>
 				}
 			</ClientSuspense>
 		</GlobalContainer>
