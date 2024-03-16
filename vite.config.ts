@@ -7,10 +7,6 @@ import path from 'path'
 export default defineConfig({
 	resolve: {
 		alias: [{ find: 'buffer', replacement: path.resolve(__dirname, 'src', 'buffer') }],
-
-		// {
-		// 	buffer: path.resolve(__dirname) + '/buffer.ts',
-		// },
 	},
 	plugins: [
 		tsconfigPaths(),

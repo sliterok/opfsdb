@@ -1,4 +1,6 @@
 // polyfill for just-cache
-export function isBuffer(e: ArrayBuffer) {
-	return ArrayBuffer.isView(e)
+export const Buffer = {
+	isBuffer(e: ArrayBuffer) {
+		return ArrayBuffer.isView(e)
+	},
 }
