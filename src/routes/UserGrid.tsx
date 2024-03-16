@@ -87,9 +87,10 @@ function Table({ children, style, innerRef }: ITableProps) {
 				width: '100%',
 				position: 'relative',
 				tableLayout: 'fixed',
-				borderCollapse: 'collapse',
+				borderCollapse: 'separate',
 				whiteSpace: 'nowrap',
 				border: 0,
+				borderSpacing: 0,
 			}}
 			border={1}
 		>
