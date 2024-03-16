@@ -9,12 +9,12 @@ import { styled } from 'styled-components'
 import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
-import Just from 'just-cache'
 import { Button } from 'src/common/button'
 import { Input } from 'src/common/input'
 import { createEvent, createStore } from 'effector'
 import { useUnit } from 'effector-react'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
+import { cache } from './cache'
 
 const chance = new Chance()
 
@@ -54,10 +54,6 @@ const HeadCell = styled.th`
 	min-width: 100px;
 `
 const batchSize = 50
-const cache = new Just({
-	ttl: 300, // 5min
-	limit: 100_000_000, //100mb
-})
 
 const TABLE_HEADER_HEIGHT = 30
 
@@ -159,6 +155,8 @@ function Item(props: IItemProps) {
 
 const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => <Item innerRef={ref} {...props} />)
 
+const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, ref) => <Page {...props} ref={ref} />)
+
 export default function MainLayout() {
 	const searchInput = useUnit($searchInput)
 	const [limit, setLimit] = useState<number>()
@@ -243,8 +241,9 @@ export default function MainLayout() {
 	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
 	const heavyComps = useMemo(
 		() =>
-			pages.map(ids =>
-				lazy(
+			pages.map(ids => ({
+				ids,
+				LoadedPage: lazy(
 					() =>
 						new Promise<{
 							default: ComponentType<Omit<Parameters<typeof Page>[0], 'users'>>
@@ -260,16 +259,12 @@ export default function MainLayout() {
 								})) as IUser[])
 							if (!restoredUsers) cache.set(ids.join(','), users)
 							// console.log(props.startIndex, ids.length, users.length)
-							const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, ref) => (
-								<Page {...props} ref={ref} users={users} />
-							))
-							LoadedPage.displayName = 'loadedPage'
 							resolve({
 								default: LoadedPage,
 							})
 						})
-				)
-			),
+				),
+			})),
 		[pages]
 	)
 
@@ -325,7 +320,7 @@ export default function MainLayout() {
 				{
 					<GridContainer>
 						<Virtualizer item={ItemRef} as={TableRef} startMargin={TABLE_HEADER_HEIGHT}>
-							{heavyComps.map((HeavyComp, i) => (
+							{heavyComps.map(({ ids, LoadedPage }, i) => (
 								<Suspense
 									key={i}
 									fallback={
@@ -337,7 +332,7 @@ export default function MainLayout() {
 										</tr>
 									}
 								>
-									<HeavyComp startIndex={i * batchSize} />
+									<LoadedPage startIndex={i * batchSize} queryKey={ids.join(',')} />
 								</Suspense>
 							))}
 						</Virtualizer>

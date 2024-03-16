@@ -1,10 +1,10 @@
 import { Fragment } from 'react/jsx-runtime'
 import { IUser } from 'src/types'
 import { styled } from 'styled-components'
-
+import { cache } from './cache'
 interface IPageProps {
 	ref: typeof Fragment
-	users: IUser[]
+	queryKey: string
 	startIndex: number
 }
 
@@ -13,9 +13,10 @@ const TableCell = styled.td`
 	padding: 0 0.5em;
 `
 export function Page(props: IPageProps) {
+	const users = cache.get(props.queryKey) as IUser[] | void
 	return (
 		<Fragment>
-			{props.users.map((user, i) => (
+			{users?.map((user, i) => (
 				<tr key={user.id} ref={props.ref}>
 					<TableCell>{props.startIndex + i + 1}</TableCell>
 					<TableCell>{user.id}</TableCell>
