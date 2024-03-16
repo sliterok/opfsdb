@@ -18,4 +18,8 @@ export const Button = styled.button`
 	user-select: none;
 	-webkit-user-select: none;
 	touch-action: manipulation;
+	min-width: 10em;
+	&:disabled {
+		color: #d9d9d9;
+	}
 `

@@ -60,6 +60,7 @@ export default function MainLayout() {
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [searchInput, setSearchInput] = useState('')
 	const [queryInput, setQueryInput] = useState<ICommandInput<IQueryInput<IUser>> | void>(undefined)
+	const [importStatus, setImportStatus] = useState('')
 
 	const userKeysQuery = useQuery(`usersKeys:${typeof window}:${isAndQuery}`, async () => {
 		if (typeof window === 'undefined') return []
@@ -107,9 +108,10 @@ export default function MainLayout() {
 	})
 
 	const importUsers = useMutation(async () => {
+		const count = 1000
 		const iters = 10
 		for (let i = 0; i < iters; i++) {
-			const count = 1000
+			setImportStatus(((i + 1) * count).toString())
 			const records = Array(count)
 				.fill(true)
 				.map(() => generateUser())
@@ -120,7 +122,6 @@ export default function MainLayout() {
 				records,
 			})
 			// eslint-disable-next-line no-console
-			console.log(`uploading users ${(i + 1) * count} of ${count * iters}`)
 		}
 	})
 
@@ -233,8 +234,11 @@ export default function MainLayout() {
 	return (
 		<GlobalContainer>
 			<HeaderContainer>
-				<Button onClick={() => userKeysQuery.refetch()}>Refetch</Button>
+				<Button disabled={userKeysQuery.isRefetching} onClick={() => userKeysQuery.refetch()}>
+					Refetch
+				</Button>
 				<Button
+					disabled={createUser.isLoading}
 					onClick={() => {
 						createUser.mutate(generateUser())
 					}}
@@ -242,13 +246,15 @@ export default function MainLayout() {
 					Add user
 				</Button>
 				<Button
+					disabled={importUsers.isLoading}
 					onClick={() => {
 						importUsers.mutate()
 					}}
 				>
-					Add 10k users
+					{importUsers.isLoading ? importStatus || 'Uploading...' : 'Add 10k users'}
 				</Button>
 				<Button
+					disabled={dropTable.isLoading}
 					onClick={() => {
 						dropTable.mutate()
 					}}
