@@ -16,7 +16,7 @@ export function Page(props: IPageProps) {
 		<Fragment>
 			{props.users.map((user, i) => (
 				<tr key={user.id}>
-					<TableCell>{props.startIndex + i}</TableCell>
+					<TableCell>{props.startIndex + i + 1}</TableCell>
 					<TableCell>{user.id}</TableCell>
 					<TableCell>{user.name}</TableCell>
 					<TableCell>{user.surname}</TableCell>
