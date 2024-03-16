@@ -1,4 +1,5 @@
-import { BPTreeCondition } from 'src/impl/bptree/BPTree'
+/* eslint-disable import/default */
+import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IBasicRecord, ICommandInputs } from './types'
 import sharedWorkerUrl from '../workers/shared?sharedworker&url'
 import workerUrl from '../workers/dedicated?worker&url'

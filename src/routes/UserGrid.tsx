@@ -1,13 +1,12 @@
 /* eslint-disable react/display-name */
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { ComponentType, InputHTMLAttributes, ReactNode, Ref, Suspense, forwardRef, lazy, useCallback, useEffect, useMemo, useState } from 'react'
-import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
+import { ComponentType, Ref, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
+import { IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
-import deepmerge from 'deepmerge'
 import { batchReduce, sendCommand } from 'src/db/helpers'
 import { styled } from 'styled-components'
-import { CustomContainerComponentProps, CustomContainerComponent, CustomItemComponentProps, Virtualizer, CustomItemComponent } from 'virtua'
+import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
 import Just from 'just-cache'
@@ -122,7 +121,7 @@ function Table({ children, style, innerRef }: ITableProps) {
 						<Input
 							type="number"
 							placeholder="Orders"
-							value={searchInput.orders || ''}
+							value={searchInput.orders === undefined ? '' : searchInput.orders}
 							onChange={e => setSearchInput([e.target.valueAsNumber, 'orders'])}
 						/>
 					</HeadCell>
@@ -161,7 +160,7 @@ const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((p
 
 export default function MainLayout() {
 	const searchInput = useUnit($searchInput)
-	const [limit, setLimit] = useState<number | false>()
+	const [limit, setLimit] = useState<number>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
 	const [importStatus, setImportStatus] = useState('')
 
@@ -172,7 +171,7 @@ export default function MainLayout() {
 			const query: Record<string, BPTreeCondition<string | number>> = {}
 			for (const key in searchInput) {
 				const val = searchInput[key]
-				if (!val) continue
+				if (!isNaN(val)) continue
 				query[key] = key === 'orders' ? { equal: val } : { like: '%' + val + '%' }
 			}
 
@@ -307,7 +306,7 @@ export default function MainLayout() {
 					<div>Limit</div>
 					<Input
 						type="number"
-						value={limit}
+						value={limit === undefined ? '' : limit}
 						onChange={e => setLimit(e.target.valueAsNumber)}
 						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
 					/>

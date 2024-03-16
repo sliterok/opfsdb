@@ -1,5 +1,5 @@
 import { Encoder } from 'cbor-x'
-import { BPTreeCondition } from 'src/impl/bptree/BPTree'
+import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 
 export interface IBaseInput {
 	tableName: string

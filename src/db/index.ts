@@ -2,9 +2,10 @@
 /// <reference lib="webworker" />
 /* eslint-disable ssr-friendly/no-dom-globals-in-module-scope */
 
-import { BPTreeAsync, SerializeStrategyAsync, SerializeStrategyHead } from 'serializable-bptree'
+import { BPTreeAsync, SerializeStrategyAsync, SerializeStrategyHead, BPTreeNode } from 'serializable-bptree'
 import { decode, encode, Encoder } from 'cbor-x'
-import { BPTreeCondition, BPTreeNode, Comparator } from '../impl/bptree'
+import { Comparator } from './comparator'
+import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import {
 	ICommandInput,
 	ICreateTableInput,
