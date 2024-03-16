@@ -20,6 +20,7 @@ export const Button = styled.button`
 	touch-action: manipulation;
 	min-width: 10em;
 	&:disabled {
+		cursor: initial;
 		color: #d9d9d9;
 	}
 `

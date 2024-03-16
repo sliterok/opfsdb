@@ -385,7 +385,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		return this.encoder.encode([at, length])
 	}
 
-	private decodeLocation(val?: Uint8Array) {
+	private decodeLocation(val?: Uint8Array): number[] {
 		if (!val) return []
 		return this.encoder.decode(val)
 	}
