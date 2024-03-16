@@ -26,6 +26,9 @@ dependencies:
   deepmerge:
     specifier: ^4.3.1
     version: 4.3.1
+  just-cache:
+    specifier: ^1.6.7
+    version: 1.6.7
   react:
     specifier: ^18.2.0
     version: 18.2.0
@@ -3000,6 +3003,10 @@ packages:
       object.assign: 4.1.5
       object.values: 1.1.7
     dev: true
+
+  /just-cache@1.6.7:
+    resolution: {integrity: sha512-f+UybUJdlqFmwLRMztuYpKc3KCp/7/mZ0MDRek480gXX6raF/E976OIDdMq+odQ0TBuMylQkzjkwCYyyu1MoTg==}
+    dev: false
 
   /keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}

@@ -1,6 +1,6 @@
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { ComponentType, JSXElementConstructor, Key, ReactElement, ReactNode, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
-import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput } from 'src/db/types'
+import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
+import { ICommandInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import deepmerge from 'deepmerge'
@@ -9,6 +9,7 @@ import { styled } from 'styled-components'
 import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
+import Just from 'just-cache'
 
 const chance = new Chance()
 
@@ -37,6 +38,10 @@ const HeadCell = styled.th`
 	min-width: 100px;
 `
 const batchSize = 50
+const cache = new Just({
+	ttl: 300, // 5min
+	limit: 100_000_000, //100mb
+})
 export default function MainLayout() {
 	const [limit, setLimit] = useState<number | false>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
@@ -118,15 +123,29 @@ export default function MainLayout() {
 	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
 	const heavyComps = useMemo(
 		() =>
-			pages.map(() =>
+			pages.map(ids =>
 				lazy(
 					() =>
 						new Promise<{
-							default: ComponentType<Parameters<typeof Page>[0]>
+							default: ComponentType<Omit<Parameters<typeof Page>[0], 'users'>>
 							// eslint-disable-next-line no-async-promise-executor
 						}>(async resolve => {
+							const restoredUsers = cache.get(ids.join(',')) as IUser[] | void
+							const users =
+								restoredUsers ||
+								((await sendCommand<IReadManyInput, IUser>({
+									name: 'readMany',
+									tableName: 'users',
+									ids,
+								})) as IUser[])
+							if (!restoredUsers) cache.set(ids.join(','), users)
+							// console.log(props.startIndex, ids.length, users.length)
+							const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, ref) => (
+								<Page {...props} ref={ref} users={users} />
+							))
+							LoadedPage.displayName = 'loadedPage'
 							resolve({
-								default: Page,
+								default: LoadedPage,
 							})
 						})
 				)
@@ -265,7 +284,7 @@ export default function MainLayout() {
 										</tr>
 									}
 								>
-									<HeavyComp ids={pages[i]} startIndex={i * batchSize} queryKey={userKeysQuery.dataUpdatedAt || 0} />
+									<HeavyComp startIndex={i * batchSize} />
 								</Suspense>
 							))}
 						</Virtualizer>
