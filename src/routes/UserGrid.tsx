@@ -10,6 +10,8 @@ import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } 
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
 import Just from 'just-cache'
+import { Button } from 'src/common/button'
+import { Input } from 'src/common/input'
 
 const chance = new Chance()
 
@@ -231,35 +233,31 @@ export default function MainLayout() {
 	return (
 		<GlobalContainer>
 			<HeaderContainer>
+				<Button onClick={() => userKeysQuery.refetch()}>Refetch</Button>
+				<Button
+					onClick={() => {
+						createUser.mutate(generateUser())
+					}}
+				>
+					Add user
+				</Button>
+				<Button
+					onClick={() => {
+						importUsers.mutate()
+					}}
+				>
+					Add 10k users
+				</Button>
+				<Button
+					onClick={() => {
+						dropTable.mutate()
+					}}
+				>
+					Drop table
+				</Button>
 				<div>
-					<button onClick={() => userKeysQuery.refetch()}>refetch</button>
-				</div>
-				<div>
-					<button
-						onClick={() => {
-							createUser.mutate(generateUser())
-						}}
-					>
-						add user
-					</button>
-					<button
-						onClick={() => {
-							importUsers.mutate()
-						}}
-					>
-						add 10k users
-					</button>
-					<button
-						onClick={() => {
-							dropTable.mutate()
-						}}
-					>
-						drop table
-					</button>
-				</div>
-				<div>
-					<div>search name</div>
-					<input
+					<div>Search in name</div>
+					<Input
 						value={searchInput}
 						onChange={e => setSearchInput(e.target.value)}
 						onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
@@ -267,7 +265,7 @@ export default function MainLayout() {
 				</div>
 				<div>
 					<div>Limit</div>
-					<input
+					<Input
 						type="number"
 						value={limit}
 						onChange={e => setLimit(e.target.valueAsNumber)}
@@ -276,7 +274,7 @@ export default function MainLayout() {
 				</div>
 				<div>
 					<div>and</div>
-					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
+					<Input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
 			</HeaderContainer>
 			<ClientSuspense fallback="Loading grid...">
