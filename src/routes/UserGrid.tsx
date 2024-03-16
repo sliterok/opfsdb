@@ -13,8 +13,19 @@ import Just from 'just-cache'
 
 const chance = new Chance()
 
+const HeaderContainer = styled.div`
+	height: 3em;
+	display: flex;
+	gap: 1em;
+`
+
+const GlobalContainer = styled.div`
+	height: 100svh;
+	display: flex;
+	flex-direction: column;
+`
+
 const GridContainer = styled.div`
-	height: 95svh;
 	overflow-y: auto;
 	width: 100svw;
 `
@@ -218,8 +229,8 @@ export default function MainLayout() {
 	Table.displayName = 'table'
 
 	return (
-		<>
-			<div style={{ height: '5svh', display: 'flex', gap: '1em' }}>
+		<GlobalContainer>
+			<HeaderContainer>
 				<div>
 					<button onClick={() => userKeysQuery.refetch()}>refetch</button>
 				</div>
@@ -267,7 +278,7 @@ export default function MainLayout() {
 					<div>and</div>
 					<input type="checkbox" checked={isAndQuery} onChange={e => setIsAndQuery(e.target.checked)} />
 				</div>
-			</div>
+			</HeaderContainer>
 			<ClientSuspense fallback="Loading grid...">
 				{
 					<GridContainer>
@@ -291,6 +302,6 @@ export default function MainLayout() {
 					</GridContainer>
 				}
 			</ClientSuspense>
-		</>
+		</GlobalContainer>
 	)
 }
