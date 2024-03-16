@@ -40,10 +40,7 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 	}
 
 	async id(): Promise<number> {
-		this.index += 1
-		// console.log('returned index:', this.index, this.indexName)
-		if (this.lastHead) await this.writeHead(this.lastHead)
-		return this.index
+		return await this.autoIncrement('index', 1)
 	}
 
 	read(index = 0): Promise<BPTreeNode<K, V>> {
@@ -57,23 +54,17 @@ export class FileStoreStrategy<K, V> extends SerializeStrategyAsync<K, V> {
 
 	async readHead(): Promise<SerializeStrategyHead | null> {
 		if (this.lastHead) {
-			this.lastHead.data.index = this.index
 			return this.lastHead
 		}
 		const head: SerializeStrategyHead = await this.parent.readFile(this.root, 'head', 0, this.encoder)
-
-		this.index = Math.max((head?.data?.index as number) || 0, this.index)
 		this.lastHead = head
-		// console.log('read', this.indexName, head)
 		return head
 	}
 
 	async writeHead(head: SerializeStrategyHead): Promise<void> {
 		if (this.writeHeadTimeout) clearTimeout(this.writeHeadTimeout)
-		head.data.index = this.index
 		this.lastHead = head
 		this.writeHeadTimeout = setTimeout(() => {
-			// console.log('write', this.indexName, this.index)
 			this.parent.writeFile(this.root, 'head', head, this.encoder)
 		}, 100)
 	}

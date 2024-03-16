@@ -38,7 +38,7 @@
     "react": "^18.2.0",
     "react-content-loader": "^7.0.0",
     "react-dom": "^18.2.0",
-    "serializable-bptree": "^3.1.0",
+    "serializable-bptree": "^3.2.1",
     "styled-components": "^6.1.8",
     "virtua": "^0.29.0"
   }
