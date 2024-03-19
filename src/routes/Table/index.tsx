@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { ComponentType, Ref, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
-import { IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
+import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
+import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { batchReduce, sendCommand } from 'src/db/helpers'
@@ -11,10 +11,13 @@ import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
 import { Button } from 'src/common/button'
 import { Input } from 'src/common/input'
-import { createEvent, createStore } from 'effector'
 import { useUnit } from 'effector-react'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
-import { cache } from './cache'
+import { cache } from '../cache'
+import { $config, $searchInput, importCsvFile } from './model'
+import { Item } from './Item'
+import { TABLE_HEADER_HEIGHT, batchSize } from './shared'
+import { Table } from './Table'
 
 const chance = new Chance()
 
@@ -50,115 +53,13 @@ const Skeleton = () => {
 	return <Facebook style={{ height: '300px', display: 'block' }} />
 }
 
-const HeadCell = styled.th`
-	min-width: 100px;
-`
-const batchSize = 50
-
-const TABLE_HEADER_HEIGHT = 30
-
-type ITableProps = CustomContainerComponentProps & {
-	innerRef: Ref<HTMLTableElement>
-}
-
-type ISearchInput = Record<string, string | number>
-
-const $searchInput = createStore<ISearchInput>({})
-const setSearchInput = createEvent<[string | number | void, string]>()
-$searchInput.on(setSearchInput, (old, [input, key]) => {
-	if (input === undefined) {
-		delete old[key]
-		return old
-	}
-	return { ...old, [key]: input }
-})
-
-function Table({ children, style, innerRef }: ITableProps) {
-	const searchInput = useUnit($searchInput)
-	return (
-		<table
-			ref={innerRef}
-			style={{
-				height: ((style?.height as number) || 0) + TABLE_HEADER_HEIGHT,
-				width: '100%',
-				position: 'relative',
-				tableLayout: 'fixed',
-				borderCollapse: 'separate',
-				whiteSpace: 'nowrap',
-				border: 0,
-				borderSpacing: 0,
-			}}
-			border={1}
-		>
-			<thead
-				key={-1}
-				style={{
-					position: 'sticky',
-					top: 0,
-					zIndex: 1,
-					height: TABLE_HEADER_HEIGHT,
-					minHeight: TABLE_HEADER_HEIGHT,
-					maxHeight: TABLE_HEADER_HEIGHT,
-					background: '#fff',
-				}}
-			>
-				<tr>
-					<HeadCell>index</HeadCell>
-					<HeadCell>id</HeadCell>
-					<HeadCell>
-						<Input placeholder="Name" value={searchInput.name || ''} onChange={e => setSearchInput([e.target.value, 'name'])} />
-					</HeadCell>
-					<HeadCell>
-						<Input placeholder="Surname" value={searchInput.surname || ''} onChange={e => setSearchInput([e.target.value, 'surname'])} />
-					</HeadCell>
-					<HeadCell>
-						<Input placeholder="Address" value={searchInput.address || ''} onChange={e => setSearchInput([e.target.value, 'address'])} />
-					</HeadCell>
-					<HeadCell>
-						<Input
-							type="number"
-							placeholder="Orders"
-							value={searchInput.orders === undefined ? '' : searchInput.orders}
-							onChange={e => setSearchInput([e.target.valueAsNumber, 'orders'])}
-						/>
-					</HeadCell>
-				</tr>
-			</thead>
-			{children}
-		</table>
-	)
-}
-const TableRef = forwardRef<HTMLTableElement, CustomContainerComponentProps>((props, ref) => <Table innerRef={ref} {...props} />)
-
-type IItemProps = CustomItemComponentProps & {
-	innerRef: Ref<HTMLTableSectionElement>
-}
-function Item(props: IItemProps) {
-	const { style, index, children, innerRef } = props
-	return (
-		<tbody
-			ref={innerRef}
-			key={index}
-			style={{
-				...style,
-				contain: undefined,
-				position: 'absolute',
-				left: 0,
-				display: 'table',
-				top: ((style.top as number) || 0) + TABLE_HEADER_HEIGHT,
-			}}
-		>
-			{children}
-		</tbody>
-	)
-}
-
-const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => <Item innerRef={ref} {...props} />)
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const LoadedPage = forwardRef<typeof Page, Parameters<typeof Page>[0]>((props, _ref) => <Page {...props} />)
+const TableRef = forwardRef<HTMLTableElement, CustomContainerComponentProps>((props, ref) => <Table innerRef={ref} {...props} />)
+const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((props, ref) => <Item innerRef={ref} {...props} />)
 
 export default function MainLayout() {
+	const config = useUnit($config)
 	const searchInput = useUnit($searchInput)
 	const [limit, setLimit] = useState<number>()
 	const [isAndQuery, setIsAndQuery] = useState(true)
@@ -171,7 +72,7 @@ export default function MainLayout() {
 			const query: Record<string, BPTreeCondition<string | number>> = {}
 			for (const key in searchInput) {
 				const val = searchInput[key]
-				if (!isNaN(val)) continue
+				if (!isNaN(val as number)) continue
 				query[key] = key === 'orders' ? { equal: val } : { like: '%' + val + '%' }
 			}
 
@@ -189,6 +90,9 @@ export default function MainLayout() {
 			console.error(error)
 		}
 	})
+
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	useEffect(() => userKeysQuery.refetch(), [config.keys])
 
 	const createUser = useMutation(
 		async (record: IUser) => {
@@ -212,6 +116,20 @@ export default function MainLayout() {
 		})
 	})
 
+	const initTable = useMutation(async () => {
+		const keys = Object.entries(config.keys)
+			.filter(([, val]) => val.indexed)
+			.map(([key]) => key)
+
+		console.log({ keys })
+
+		await sendCommand<ICreateTableInput>({
+			name: 'createTable',
+			tableName: 'users',
+			keys,
+		})
+	})
+
 	const importUsers = useMutation(async () => {
 		const count = 1000
 		const iters = 10
@@ -226,7 +144,6 @@ export default function MainLayout() {
 				tableName: 'users',
 				records,
 			})
-			// eslint-disable-next-line no-console
 		}
 	})
 
@@ -298,6 +215,15 @@ export default function MainLayout() {
 							>
 								{importUsers.isLoading ? importStatus || 'Uploading...' : 'Add 10k users'}
 							</Button>
+							<Input type="file" onChange={e => importCsvFile(e.target.files![0])}></Input>
+							<Button
+								disabled={initTable.isLoading}
+								onClick={() => {
+									initTable.mutate()
+								}}
+							>
+								Load table
+							</Button>
 							<Button
 								disabled={dropTable.isLoading}
 								onClick={() => {
@@ -331,14 +257,14 @@ export default function MainLayout() {
 										key={i}
 										fallback={
 											<tr style={{ height: `${batchSize * 1.3725}em`, verticalAlign: 'top' }}>
-												<HeadCell>
+												<td>
 													<div>loading...</div>
 													<Skeleton />
-												</HeadCell>
+												</td>
 											</tr>
 										}
 									>
-										<LoadedPage startIndex={i * batchSize} queryKey={queryKey} />
+										<LoadedPage startIndex={i * batchSize} queryKey={queryKey} keys={Object.keys(config.keys)} />
 									</Suspense>
 								))}
 							</Virtualizer>

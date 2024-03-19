@@ -84,7 +84,7 @@ export class OPFSDB<T extends IBasicRecord> {
 	constructor(
 		private tableName: string,
 		keys?: (keyof T)[],
-		private order = 15
+		private order = 25
 	) {
 		if (keys) this.keys = new Set(keys as string[])
 	}
@@ -347,7 +347,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		try {
 			const globalRoot = await navigator.storage.getDirectory()
 			await globalRoot.removeEntry(this.tableName, { recursive: true })
-			await this.init()
+			// await this.init()
 		} catch (error) {
 			console.error(error)
 		}
@@ -477,6 +477,7 @@ export class OPFSDB<T extends IBasicRecord> {
 const tables: Record<string, OPFSDB<any>> = {}
 
 export const createTableCommand = async ({ tableName, keys }: ICommandInput<ICreateTableInput>) => {
+	if (tables[tableName]) return
 	const table = new OPFSDB(tableName, keys)
 	await table.init()
 	tables[tableName] = table
@@ -506,8 +507,10 @@ export const readManyCommand = <T>({ tableName, ids }: ICommandInput<IReadManyIn
 	return tables[tableName].readMany(ids)
 }
 
-export const dropCommand = ({ tableName }: ICommandInput<IDropInput>): Promise<void> => {
-	return tables[tableName].drop()
+export const dropCommand = async ({ tableName }: ICommandInput<IDropInput>): Promise<void> => {
+	const res = await tables[tableName].drop()
+	delete tables[tableName]
+	return res
 }
 
 export const unloadTables = async () => {

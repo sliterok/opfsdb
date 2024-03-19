@@ -1,7 +1,7 @@
 import { PrerenderResult } from 'rakkasjs'
-import UserGrid from './UserGrid'
+import Table from './Table'
 
-export default UserGrid
+export default Table
 
 export function prerender(): PrerenderResult {
 	return {

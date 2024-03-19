@@ -1,11 +1,10 @@
 /// <reference lib="webworker" />
 
-import { command, createTableCommand, unloadTables } from '../db/index'
+import { command, unloadTables } from '../db/index'
 
 let isMaster = false
 async function startMaster() {
 	isMaster = true
-	await createTableCommand({ tableName: 'users', keys: ['name', 'surname', 'orders', 'address'] })
 }
 async function stopMaster() {
 	await unloadTables()

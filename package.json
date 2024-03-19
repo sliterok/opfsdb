@@ -28,6 +28,7 @@
     "@hattip/response": "0.0.42",
     "@types/chance": "^1.1.6",
     "@types/deepmerge": "^2.2.0",
+    "@types/papaparse": "^5.3.14",
     "cbor-x": "^1.5.8",
     "chance": "^1.1.11",
     "deep-object-diff": "^1.1.9",
@@ -35,10 +36,11 @@
     "effector": "^23.2.0",
     "effector-react": "^23.2.0",
     "just-cache": "^1.6.7",
+    "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-content-loader": "^7.0.0",
     "react-dom": "^18.2.0",
-    "serializable-bptree": "^3.2.1",
+    "serializable-bptree": "^3.2.2",
     "styled-components": "^6.1.8",
     "virtua": "^0.29.0"
   }
