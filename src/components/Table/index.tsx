@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
 /* eslint-disable react/display-name */
 import { ClientSuspense, useMutation } from 'rakkasjs'
-import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo } from 'react'
+import { ComponentType, Suspense, forwardRef, lazy, useMemo } from 'react'
 import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
-import { batchReduce, sendCommand } from 'src/db/helpers'
+import { sendCommand } from 'src/db/helpers'
 import { styled } from 'styled-components'
 import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
@@ -19,7 +19,8 @@ import {
 	$importStatus,
 	$isAndQuery,
 	$searchLimit,
-	$userKeys,
+	$userKeysLength,
+	$userKeysPages,
 	importCsvFile,
 	readCsvFile,
 	refetchUserKeys,
@@ -73,7 +74,7 @@ const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((p
 
 export default function MainLayout() {
 	const config = useUnit($config)
-	const [userKeys, userKeysLoading] = useUnit([$userKeys, queryUserKeysFx.pending])
+	const [userKeysPages, userKeysLength, userKeysLoading] = useUnit([$userKeysPages, $userKeysLength, queryUserKeysFx.pending])
 	const isCsvLoading = useUnit(loadCsvFileFx.pending)
 	const importStatus = useUnit($importStatus)
 	const limit = useUnit($searchLimit)
@@ -139,11 +140,9 @@ export default function MainLayout() {
 		}
 	)
 
-	const pages = useMemo(() => (userKeys ? batchReduce(userKeys, batchSize) : []), [userKeys])
-	useEffect(() => cache.clean(), [pages])
 	const asyncPages = useMemo(
 		() =>
-			pages.map(ids => {
+			userKeysPages.map(ids => {
 				const queryKey = ids.join(',')
 				return {
 					queryKey,
@@ -170,7 +169,7 @@ export default function MainLayout() {
 					),
 				}
 			}),
-		[pages]
+		[userKeysPages]
 	)
 
 	return (
@@ -233,7 +232,7 @@ export default function MainLayout() {
 								/>
 							</div>
 							<div>
-								<div>{userKeys?.length || 0}</div>
+								<div>{userKeysLength || 0}</div>
 								<div>results</div>
 							</div>
 							<div>

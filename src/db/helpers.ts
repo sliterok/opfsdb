@@ -1,5 +1,4 @@
 /* eslint-disable import/default */
-import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IBasicRecord, ICommandInputs } from './types'
 import sharedWorkerUrl from '../workers/shared?sharedworker&url'
 import workerUrl from '../workers/dedicated?worker&url'
@@ -40,11 +39,3 @@ export const sendCommand = <Command extends ICommandInputs<ReturnType>, ReturnTy
 
 		worker.postMessage({ port: channel.port1, command }, [channel.port1])
 	})
-
-export function batchReduce<T>(arr: T[], batchSize: number): T[][] {
-	return arr.reduce((batches, curr, i) => {
-		if (i % batchSize === 0) batches.push([])
-		batches[batches.length - 1].push(arr[i])
-		return batches
-	}, [] as T[][])
-}

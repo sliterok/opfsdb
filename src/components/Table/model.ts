@@ -3,6 +3,9 @@ import { combine, createEvent, createStore, sample } from 'effector'
 import { IConfig, IQueryUserKeysParams, ISearchInput } from './types'
 import { loadCsvFileFx, loadCsvHeaderFx, queryUserKeysFx } from './api'
 import { debounce } from 'patronum/debounce'
+import { batchReduce } from './helpers'
+import { batchSize } from './shared'
+import { cache } from 'src/cache'
 
 export const $isAndQuery = createStore(true)
 export const setIsAndQuery = createEvent<boolean>()
@@ -81,6 +84,11 @@ export const $userKeysQuery = combine<IQueryUserKeysParams>({ searchInput: $debo
 
 export const $userKeys = createStore<string[]>([])
 $userKeys.on(queryUserKeysFx.doneData, (_, userKeys) => userKeys)
+
+export const $userKeysLength = $userKeys.map(userKeys => userKeys.length)
+export const $userKeysPages = $userKeys.map(userKeys => (userKeys ? batchReduce(userKeys, batchSize) : []))
+
+$userKeysPages.watch(() => cache.clean())
 
 export const refetchUserKeys = createEvent()
 
