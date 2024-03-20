@@ -1,9 +1,16 @@
 /* eslint-disable no-console */
-import { createEvent, createStore } from 'effector'
-import { parse } from 'papaparse'
-import { sendCommand } from 'src/db/helpers'
-import { ICreateTableInput, IImportInput } from 'src/db/types'
-import { IConfigKeys, ISearchInput } from './types'
+import { combine, createEvent, createStore, sample } from 'effector'
+import { IConfig, IQueryUserKeysParams, ISearchInput } from './types'
+import { loadCsvFileFx, loadCsvHeaderFx, queryUserKeysFx } from './api'
+import { debounce } from 'patronum/debounce'
+
+export const $isAndQuery = createStore(true)
+export const setIsAndQuery = createEvent<boolean>()
+$isAndQuery.on(setIsAndQuery, (_, isAnd) => isAnd)
+
+export const $searchLimit = createStore<number | null>(null)
+export const setSearchLimit = createEvent<number | null>()
+$searchLimit.on(setSearchLimit, (_, limit) => limit)
 
 export const $searchInput = createStore<ISearchInput>({})
 export const setSearchInput = createEvent<[string | number | void, string]>()
@@ -16,7 +23,15 @@ $searchInput.on(setSearchInput, (old, [input, key]) => {
 	return { ...old, [key]: input }
 })
 
-export const $config = createStore({
+export const $debouncedSearchInput = createStore<ISearchInput>({})
+
+debounce({
+	timeout: 60,
+	source: $searchInput,
+	target: $debouncedSearchInput,
+})
+
+export const $config = createStore<IConfig>({
 	keys: {
 		id: {
 			type: 'string',
@@ -37,62 +52,55 @@ export const $config = createStore({
 			indexed: true,
 			type: 'string',
 		},
-	} as IConfigKeys,
+	},
 })
 
-export const setConfig = createEvent<{ keys: IConfigKeys }>()
+$config.on(loadCsvHeaderFx.doneData, (config, keys) => (keys ? { ...config, keys } : config))
+
+export const setConfig = createEvent<IConfig>()
 
 $config.on(setConfig, (old, config) => config)
 
 export const importCsvFile = createEvent<File>()
+export const readCsvFile = createEvent()
 export const $csvFile = createStore<File | null>(null)
 
 $csvFile.on(importCsvFile, (_, file) => file)
-
-$csvFile.map(async file => {
-	if (!file) return
-	let initted = false
-	let tableCreated: boolean | Promise<unknown> = false
-	let keys: IConfigKeys
-	const importPromises = new Set<Promise<void>>()
-
-	parse(file, {
-		header: true,
-		preview: 40000,
-		chunkSize: 100_000,
-		async complete() {
-			await Promise.all(importPromises)
-			setConfig({
-				keys,
-			})
-		},
-		async chunk(results, parser) {
-			parser.pause()
-			// eslint-disable-next-line no-async-promise-executor
-			const promise = new Promise<void>(async res => {
-				if (!initted) {
-					initted = true
-					keys = results.meta.fields!.reduce((acc, field) => ({ ...acc, [field]: { indexed: field !== 'Sex', type: 'string' } }), {})
-					tableCreated = sendCommand<ICreateTableInput>({
-						name: 'createTable',
-						tableName: 'users',
-						keys: results.meta.fields!.filter(el => el !== 'Sex'),
-					})
-					console.log('table created')
-				}
-				await tableCreated
-				console.log('importing')
-				const records = results.data
-				await sendCommand<IImportInput<any>, any>({
-					name: 'import',
-					tableName: 'users',
-					records,
-				})
-				res()
-				parser.resume()
-			})
-			importPromises.add(promise)
-			promise.finally(() => importPromises.delete(promise))
-		},
-	})
+sample({
+	clock: $csvFile.updates,
+	target: loadCsvHeaderFx,
 })
+
+sample({
+	source: $csvFile,
+	clock: readCsvFile,
+	target: loadCsvFileFx,
+})
+
+export const $userKeysQuery = combine<IQueryUserKeysParams>({ searchInput: $debouncedSearchInput, isAnd: $isAndQuery, limit: $searchLimit })
+
+export const $userKeys = createStore<string[]>([])
+$userKeys.on(queryUserKeysFx.doneData, (_, userKeys) => userKeys)
+
+export const refetchUserKeys = createEvent()
+
+sample({
+	source: $userKeysQuery,
+	target: queryUserKeysFx,
+})
+
+sample({
+	source: $userKeysQuery,
+	clock: refetchUserKeys,
+	target: queryUserKeysFx,
+})
+
+sample({
+	source: $userKeysQuery,
+	clock: loadCsvFileFx.doneData,
+	target: queryUserKeysFx,
+})
+
+export const $importStatus = createStore<string | null>(null)
+export const setImportStatus = createEvent<string | null>()
+$importStatus.on(setImportStatus, (_, status) => status)

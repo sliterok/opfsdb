@@ -1,7 +1,8 @@
+/* eslint-disable no-console */
 /* eslint-disable react/display-name */
-import { ClientSuspense, useMutation, useQuery } from 'rakkasjs'
-import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo, useState } from 'react'
-import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IQueryInput, IReadManyInput } from 'src/db/types'
+import { ClientSuspense, useMutation } from 'rakkasjs'
+import { ComponentType, Suspense, forwardRef, lazy, useEffect, useMemo } from 'react'
+import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { batchReduce, sendCommand } from 'src/db/helpers'
@@ -12,12 +13,24 @@ import { Page } from './Page'
 import { Button } from 'src/common/button'
 import { Input } from 'src/common/input'
 import { useUnit } from 'effector-react'
-import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { cache } from '../cache'
-import { $config, $searchInput, importCsvFile } from './model'
+import {
+	$config,
+	$importStatus,
+	$isAndQuery,
+	$searchLimit,
+	$userKeys,
+	importCsvFile,
+	readCsvFile,
+	refetchUserKeys,
+	setImportStatus,
+	setIsAndQuery,
+	setSearchLimit,
+} from './model'
 import { Item } from './Item'
 import { TABLE_HEADER_HEIGHT, batchSize } from './shared'
 import { Table } from './Table'
+import { loadCsvFileFx, queryUserKeysFx } from './api'
 
 const chance = new Chance()
 
@@ -60,39 +73,11 @@ const ItemRef = forwardRef<HTMLTableSectionElement, CustomItemComponentProps>((p
 
 export default function MainLayout() {
 	const config = useUnit($config)
-	const searchInput = useUnit($searchInput)
-	const [limit, setLimit] = useState<number>()
-	const [isAndQuery, setIsAndQuery] = useState(true)
-	const [importStatus, setImportStatus] = useState('')
-
-	const userKeysQuery = useQuery(`usersKeys:${typeof window}:${isAndQuery}`, async () => {
-		if (typeof window === 'undefined') return []
-
-		try {
-			const query: Record<string, BPTreeCondition<string | number>> = {}
-			for (const key in searchInput) {
-				const val = searchInput[key]
-				if (!isNaN(val as number)) continue
-				query[key] = key === 'orders' ? { equal: val } : { like: '%' + val + '%' }
-			}
-
-			const command: IQueryInput = {
-				name: 'query',
-				tableName: 'users',
-				query,
-				isAnd: isAndQuery,
-				limit: limit ? limit : undefined,
-				keys: true,
-			}
-			const users = await sendCommand<IQueryInput, IUser>(command)
-			return users as string[]
-		} catch (error) {
-			console.error(error)
-		}
-	})
-
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	useEffect(() => userKeysQuery.refetch(), [config.keys])
+	const [userKeys, userKeysLoading] = useUnit([$userKeys, queryUserKeysFx.pending])
+	const isCsvLoading = useUnit(loadCsvFileFx.pending)
+	const importStatus = useUnit($importStatus)
+	const limit = useUnit($searchLimit)
+	const isAndQuery = useUnit($isAndQuery)
 
 	const createUser = useMutation(
 		async (record: IUser) => {
@@ -104,7 +89,7 @@ export default function MainLayout() {
 		},
 		{
 			onSettled() {
-				userKeysQuery.refetch()
+				refetchUserKeys()
 			},
 		}
 	)
@@ -130,33 +115,31 @@ export default function MainLayout() {
 		})
 	})
 
-	const importUsers = useMutation(async () => {
-		const count = 1000
-		const iters = 10
-		for (let i = 0; i < iters; i++) {
-			setImportStatus(((i + 1) * count).toString())
-			const records = Array(count)
-				.fill(true)
-				.map(() => generateUser())
+	const importUsers = useMutation(
+		async () => {
+			const count = 1000
+			const iters = 10
+			for (let i = 0; i < iters; i++) {
+				setImportStatus(((i + 1) * count).toString())
+				const records = Array(count)
+					.fill(true)
+					.map(() => generateUser())
 
-			await sendCommand<IImportInput<IUser>, IUser>({
-				name: 'import',
-				tableName: 'users',
-				records,
-			})
+				await sendCommand<IImportInput<IUser>, IUser>({
+					name: 'import',
+					tableName: 'users',
+					records,
+				})
+			}
+		},
+		{
+			onSuccess() {
+				refetchUserKeys()
+			},
 		}
-	})
+	)
 
-	useEffect(() => {
-		const delayDebounceFn = setTimeout(() => {
-			userKeysQuery.refetch()
-		}, 60)
-
-		return () => clearTimeout(delayDebounceFn)
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [searchInput])
-
-	const pages = useMemo(() => (userKeysQuery.data ? batchReduce(userKeysQuery.data, batchSize) : []), [userKeysQuery.data])
+	const pages = useMemo(() => (userKeys ? batchReduce(userKeys, batchSize) : []), [userKeys])
 	useEffect(() => cache.clean(), [pages])
 	const asyncPages = useMemo(
 		() =>
@@ -196,7 +179,7 @@ export default function MainLayout() {
 				{
 					<>
 						<HeaderContainer>
-							<Button disabled={userKeysQuery.isRefetching} onClick={() => userKeysQuery.refetch()}>
+							<Button disabled={userKeysLoading} onClick={() => refetchUserKeys()}>
 								Refetch
 							</Button>
 							<Button
@@ -213,16 +196,24 @@ export default function MainLayout() {
 									importUsers.mutate()
 								}}
 							>
-								{importUsers.isLoading ? importStatus || 'Uploading...' : 'Add 10k users'}
+								{importUsers.isLoading ? importStatus || 'Importing...' : 'Add 10k users'}
 							</Button>
 							<Input type="file" onChange={e => importCsvFile(e.target.files![0])}></Input>
+							<Button
+								disabled={isCsvLoading}
+								onClick={() => {
+									readCsvFile()
+								}}
+							>
+								{isCsvLoading ? importStatus || 'Importing...' : 'Import CSV'}
+							</Button>
 							<Button
 								disabled={initTable.isLoading}
 								onClick={() => {
 									initTable.mutate()
 								}}
 							>
-								Load table
+								Init table
 							</Button>
 							<Button
 								disabled={dropTable.isLoading}
@@ -236,13 +227,13 @@ export default function MainLayout() {
 								<div>Limit</div>
 								<Input
 									type="number"
-									value={limit === undefined ? '' : limit}
-									onChange={e => setLimit(e.target.valueAsNumber)}
-									onKeyDown={e => e.key === 'Enter' && userKeysQuery.refetch()}
+									value={limit === null ? '' : limit}
+									onChange={e => setSearchLimit(e.target.valueAsNumber)}
+									onKeyDown={e => e.key === 'Enter' && refetchUserKeys()}
 								/>
 							</div>
 							<div>
-								<div>{userKeysQuery.data?.length || 0}</div>
+								<div>{userKeys?.length || 0}</div>
 								<div>results</div>
 							</div>
 							<div>

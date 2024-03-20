@@ -141,7 +141,8 @@ export class OPFSDB<T extends IBasicRecord> {
 	): Promise<T[] | string[]> {
 		const start = performance.now()
 		let indexes = new Set<string>()
-		if (Object.keys(queries).length === 0) queries['name'] = { like: '%%' }
+		if (!this.keys) throw new Error('query without keys not implemented yet')
+		if (Object.keys(queries).length === 0) queries[this.keys.values().next().value as keyof typeof queries] = { like: '%%' }
 		for (const key in queries) {
 			const tree = this.trees[key]
 			if (!tree) throw new Error('No such index found')
