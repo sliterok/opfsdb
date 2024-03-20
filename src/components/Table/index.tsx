@@ -254,7 +254,7 @@ export default function MainLayout() {
 											</tr>
 										}
 									>
-										<LoadedPage startIndex={i * batchSize} queryKey={queryKey} keys={Object.keys(config.keys)} />
+										<LoadedPage startIndex={i * batchSize} queryKey={queryKey} />
 									</Suspense>
 								))}
 							</Virtualizer>

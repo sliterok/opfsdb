@@ -58,6 +58,8 @@ export const $config = createStore<IConfig>({
 	},
 })
 
+export const $configKeys = $config.map(config => Object.keys(config.keys))
+
 $config.on(loadCsvHeaderFx.doneData, (config, keys) => (keys ? { ...config, keys } : config))
 
 export const setConfig = createEvent<IConfig>()
