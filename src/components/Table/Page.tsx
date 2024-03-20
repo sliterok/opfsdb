@@ -1,7 +1,7 @@
 import { Fragment } from 'react/jsx-runtime'
 import { IUser } from 'src/types'
 import { styled } from 'styled-components'
-import { cache } from '../cache'
+import { cache } from '../../cache'
 import { useMemo } from 'react'
 
 interface IPageProps {

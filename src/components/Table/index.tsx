@@ -10,10 +10,10 @@ import { styled } from 'styled-components'
 import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
 import { Page } from './Page'
-import { Button } from 'src/common/button'
-import { Input } from 'src/common/input'
+import { Button } from 'src/components/common/button'
+import { Input } from 'src/components/common/input'
 import { useUnit } from 'effector-react'
-import { cache } from '../cache'
+import { cache } from '../../cache'
 import {
 	$config,
 	$importStatus,

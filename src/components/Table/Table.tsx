@@ -1,6 +1,6 @@
 import { useUnit } from 'effector-react'
 import { Ref } from 'react'
-import { Input } from 'src/common/input'
+import { Input } from 'src/components/common/input'
 import { styled } from 'styled-components'
 import { CustomContainerComponentProps } from 'virtua'
 import { $searchInput, $config, setSearchInput } from './model'
