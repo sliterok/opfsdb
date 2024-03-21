@@ -3,12 +3,12 @@
 /* eslint-disable import/no-named-as-default-member */
 import Parser from 'papaparse'
 import { createEffect } from 'effector'
-import { sendCommand } from 'src/db/helpers'
 import { ICreateTableInput, IImportInput, IQueryInput, ITableKeys } from 'src/db/types'
 import { IQueryUserKeysParams } from './types'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IUser } from 'src/types'
 import { refetchUserKeys, setImportStatus } from './model'
+import { sendCommand } from './shared'
 
 export const queryUserKeysFx = createEffect(async ({ searchInput, isAnd, limit }: IQueryUserKeysParams) => {
 	if (typeof window === 'undefined') return []

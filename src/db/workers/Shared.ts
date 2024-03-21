@@ -1,6 +1,6 @@
 import { ICommandInputs } from 'src/db/types'
 
-class SharedWorkerManager {
+export class SharedWorkerController {
 	private ports: Set<MessagePort> = new Set()
 	private masterPort: MessagePort | void = undefined
 
@@ -52,5 +52,3 @@ class SharedWorkerManager {
 		await this.queryMaster(event.data, port)
 	}
 }
-
-new SharedWorkerManager()

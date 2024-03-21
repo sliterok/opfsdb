@@ -5,7 +5,6 @@ import { ComponentType, Suspense, forwardRef, lazy, useMemo } from 'react'
 import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IReadManyInput } from 'src/db/types'
 import { IUser } from 'src/types'
 import Chance from 'chance'
-import { sendCommand } from 'src/db/helpers'
 import { styled } from 'styled-components'
 import { CustomContainerComponentProps, CustomItemComponentProps, Virtualizer } from 'virtua'
 import { Facebook } from 'react-content-loader'
@@ -29,7 +28,7 @@ import {
 	setSearchLimit,
 } from './model'
 import { Item } from './Item'
-import { TABLE_HEADER_HEIGHT, batchSize } from './shared'
+import { TABLE_HEADER_HEIGHT, batchSize, sendCommand } from './shared'
 import { Table } from './Table'
 import { loadCsvFileFx, queryUserKeysFx } from './api'
 

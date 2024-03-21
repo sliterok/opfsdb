@@ -2,7 +2,8 @@
 
 import { ICommandInputs } from 'src/db/types'
 import { databaseManager } from 'src/db'
-class WorkerController {
+
+export class DedicatedWorkerController {
 	private isMaster: boolean = false
 	private masterStarted: Promise<void> | void = undefined
 	private sharedWorkerPort: MessagePort | void = undefined
@@ -91,5 +92,3 @@ class WorkerController {
 		}
 	}
 }
-
-new WorkerController()

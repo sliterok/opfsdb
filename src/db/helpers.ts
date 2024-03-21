@@ -1,41 +1,46 @@
 /* eslint-disable import/default */
 import { IBasicRecord, ICommandInputs } from './types'
-import sharedWorkerUrl from '../workers/shared?sharedworker&url'
-import workerUrl from '../workers/dedicated?worker&url'
 
-let worker: Worker
+export class WorkerManager {
+	private instance!: Worker
 
-export function getWorker() {
-	if (!worker) {
-		const sharedWorker = new SharedWorker(sharedWorkerUrl, { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' })
+	constructor(
+		private workerUrl: string,
+		private sharedWorkerUrl: string
+	) {}
 
-		worker = new Worker(workerUrl, { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' })
+	public getWorker(): Worker {
+		if (!this.instance) {
+			const type = import.meta.env.MODE === 'production' ? 'classic' : 'module'
+			const sharedWorker = new SharedWorker(this.sharedWorkerUrl, { type })
 
-		worker.postMessage({ workerPort: sharedWorker.port }, [sharedWorker.port])
+			this.instance = new Worker(this.workerUrl, { type })
+			this.instance.postMessage({ workerPort: sharedWorker.port }, [sharedWorker.port])
 
-		window.addEventListener('beforeunload', function () {
-			worker.postMessage({ closing: true })
-		})
+			window.addEventListener('beforeunload', () => {
+				this.instance.postMessage({ closing: true })
+			})
+		}
+		return this.instance
 	}
-	return worker
-}
 
-export const sendCommand = <Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
-	command: Command
-): Promise<ReturnType | ReturnType[] | string[] | void> =>
-	new Promise((res, rej) => {
-		const worker = getWorker()
-
+	public async sendCommand<Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
+		command: Command
+	): Promise<ReturnType | ReturnType[] | string[] | void> {
+		const worker = this.getWorker()
 		const channel = new MessageChannel()
 
-		channel.port2.onmessage = ({ data }) => {
-			if (data.error) {
-				rej(data.error)
-			} else {
-				res(data.result)
-				channel.port2.close()
+		return new Promise((resolve, reject) => {
+			channel.port2.onmessage = ({ data }) => {
+				if (data.error) {
+					reject(data.error)
+				} else {
+					resolve(data.result)
+					channel.port2.close()
+				}
 			}
-		}
 
-		worker.postMessage({ port: channel.port1, command }, [channel.port1])
-	})
+			worker.postMessage({ port: channel.port1, command }, [channel.port1])
+		})
+	}
+}
