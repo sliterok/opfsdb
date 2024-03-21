@@ -1,8 +1,7 @@
 /// <reference lib="webworker" />
 
 import { ICommandInputs } from 'src/db/types'
-import { command, unloadTables } from '../db/index'
-
+import { databaseManager } from 'src/db'
 class WorkerController {
 	private isMaster: boolean = false
 	private masterStarted: Promise<void> | void = undefined
@@ -17,7 +16,7 @@ class WorkerController {
 	}
 
 	private async stopMaster(): Promise<void> {
-		await unloadTables()
+		await databaseManager.unloadTables()
 	}
 
 	private initializeMessageHandler(): void {
@@ -29,6 +28,8 @@ class WorkerController {
 				await this.handleClosing()
 			} else if (data.workerPort) {
 				this.setupSharedWorkerPort(data.workerPort)
+			} else if (data.isMaster) {
+				this.isMaster = true
 			} else {
 				if (this.masterStarted) {
 					await this.handleCommand(data)
@@ -64,7 +65,7 @@ class WorkerController {
 	private async handleCommand({ command: payload, port }: { command: ICommandInputs; port: MessagePort }): Promise<void> {
 		await this.masterStarted
 		try {
-			const result = await command(payload)
+			const result = await databaseManager.executeCommand(payload)
 			port.postMessage({ result })
 		} catch (error) {
 			port.postMessage({ error })
@@ -83,7 +84,7 @@ class WorkerController {
 	private async executeCommand(data: ICommandInputs): Promise<void> {
 		await this.masterStarted
 		try {
-			const result = await command(data)
+			const result = await databaseManager.executeCommand(data)
 			this.sharedWorkerPort!.postMessage({ result })
 		} catch (error) {
 			this.sharedWorkerPort!.postMessage({ error })

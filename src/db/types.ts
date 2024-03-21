@@ -74,8 +74,6 @@ export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| IImportInput
 	| IUnloadInput
 
-export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
-
 export type IBasicRecord = {
 	id: string
 	[key: string]: any
