@@ -161,15 +161,9 @@ export class OPFSDB<T extends IBasicRecord> {
 			}
 
 			await Promise.all([
-				// eslint-disable-next-line no-async-promise-executor
-				new Promise<void>(async res => {
-					for (const key of Object.keys(this.trees)) {
-						const tree = this.trees[key]
-						const val = record.value[key]
-						if (val === undefined || val === null) continue
-						await tree.insert(record.id, val)
-					}
-					res()
+				...Object.entries(record.value).map(async ([key, val]) => {
+					const tree = this.trees[key]
+					if (tree) await tree.insert(record.id, val)
 				}),
 				this.recordsIndex.insert(this.encodeLocation(at, encoded.length), record.id),
 				this.writeFile(this.recordsRoot, 'records', encoded, false, at, to),
