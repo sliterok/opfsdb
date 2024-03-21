@@ -1,62 +1,94 @@
 /// <reference lib="webworker" />
 
+import { ICommandInputs } from 'src/db/types'
 import { command, unloadTables } from '../db/index'
 
-let isMaster = false
-async function startMaster() {
-	isMaster = true
-}
-async function stopMaster() {
-	await unloadTables()
-}
-let masterStarted: Promise<void> | void = undefined
-let startSlave: (val: void) => void
-const dedicasterStarted: Promise<void> | void = new Promise(res => (startSlave = res))
+class WorkerController {
+	private isMaster: boolean = false
+	private masterStarted: Promise<void> | void = undefined
+	private sharedWorkerPort: MessagePort | void = undefined
 
-let sharedWorkerPort: MessagePort | void = undefined
-// eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
-self.onmessage = async req => {
-	if (req.data.error || req.data.result) return
-	// dedicated worker
-	if (req.data.closing) {
-		if (isMaster) await stopMaster()
-		sharedWorkerPort!.postMessage({ closing: true })
-	} else if (req.data.workerPort) {
-		sharedWorkerPort = req.data.workerPort
-		sharedWorkerPort!.start()
-		sharedWorkerPort!.addEventListener('message', async e => {
-			if (e.data.error || e.data.result) return
-			if (e.data.isMaster !== undefined) {
-				startSlave()
-				if (e.data.isMaster) masterStarted = startMaster()
+	constructor() {
+		this.initializeMessageHandler()
+	}
+
+	private async startMaster(): Promise<void> {
+		this.isMaster = true
+	}
+
+	private async stopMaster(): Promise<void> {
+		await unloadTables()
+	}
+
+	private initializeMessageHandler(): void {
+		self.onmessage = async event => {
+			const { data } = event
+			if (data.error || data.result) return
+
+			if (data.closing) {
+				await this.handleClosing()
+			} else if (data.workerPort) {
+				this.setupSharedWorkerPort(data.workerPort)
 			} else {
-				try {
-					await masterStarted
-					const result = await command(e.data)
-					sharedWorkerPort!.postMessage({ result })
-				} catch (error) {
-					sharedWorkerPort!.postMessage({ error })
+				if (this.masterStarted) {
+					await this.handleCommand(data)
+				} else {
+					await this.queryCommand(data)
 				}
-			}
-		})
-	} else {
-		const { command: payload, port } = req.data
-		await dedicasterStarted
-		if (!masterStarted) {
-			const callback = (res: MessageEvent) => {
-				postMessage(res.data)
-				sharedWorkerPort!.removeEventListener('message', callback)
-			}
-			sharedWorkerPort!.addEventListener('message', callback)
-			sharedWorkerPort!.postMessage(payload)
-		} else {
-			try {
-				await masterStarted
-				const result = await command(payload)
-				port.postMessage({ result })
-			} catch (error) {
-				port.postMessage({ error })
 			}
 		}
 	}
+
+	private async handleClosing(): Promise<void> {
+		if (this.isMaster) await this.stopMaster()
+		this.sharedWorkerPort!.postMessage({ closing: true })
+	}
+
+	private setupSharedWorkerPort(port: MessagePort): void {
+		this.sharedWorkerPort = port
+		this.sharedWorkerPort.start()
+		this.sharedWorkerPort.addEventListener('message', async e => this.handleSharedWorkerMessage(e))
+	}
+
+	private async handleSharedWorkerMessage(event: MessageEvent): Promise<void> {
+		const { data } = event
+		if (data.error || data.result) return
+
+		if (data.isMaster !== undefined) {
+			if (data.isMaster) this.masterStarted = this.startMaster()
+		} else {
+			await this.executeCommand(data)
+		}
+	}
+
+	private async handleCommand({ command: payload, port }: { command: ICommandInputs; port: MessagePort }): Promise<void> {
+		await this.masterStarted
+		try {
+			const result = await command(payload)
+			port.postMessage({ result })
+		} catch (error) {
+			port.postMessage({ error })
+		}
+	}
+
+	private async queryCommand({ command: payload, port }: { command: ICommandInputs; port: MessagePort }): Promise<void> {
+		const callback = (res: MessageEvent) => {
+			port.postMessage(res.data)
+			this.sharedWorkerPort!.removeEventListener('message', callback)
+		}
+		this.sharedWorkerPort!.addEventListener('message', callback)
+		this.sharedWorkerPort!.postMessage(payload)
+	}
+
+	private async executeCommand(data: ICommandInputs): Promise<void> {
+		await this.masterStarted
+		try {
+			const result = await command(data)
+			this.sharedWorkerPort!.postMessage({ result })
+		} catch (error) {
+			this.sharedWorkerPort!.postMessage({ error })
+		}
+	}
 }
+
+new WorkerController()

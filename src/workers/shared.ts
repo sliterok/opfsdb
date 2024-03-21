@@ -1,50 +1,56 @@
 import { ICommandInputs } from 'src/db/types'
 
-const ports = new Set<MessagePort>()
-let masterPort: MessagePort | void = undefined
+class SharedWorkerManager {
+	private ports: Set<MessagePort> = new Set()
+	private masterPort: MessagePort | void = undefined
 
-function migrate() {
-	masterPort = ports.values().next().value
-	if (masterPort) {
-		ports.delete(masterPort!)
-		masterPort!.postMessage({ isMaster: true })
+	constructor() {
+		this.setupConnectionHandler()
 	}
-}
 
-function queryDedicated(command: ICommandInputs, responsePort: MessagePort) {
-	return new Promise<void>(res => {
+	private migrateMaster(): void {
+		this.masterPort = this.ports.values().next().value
+		if (this.masterPort) {
+			this.ports.delete(this.masterPort)
+			this.masterPort.postMessage({ isMaster: true })
+		}
+	}
+
+	private async queryMaster(command: ICommandInputs, responsePort: MessagePort): Promise<void> {
 		const callback = (response: MessageEvent) => {
 			if (!response.data.result && !response.data.error) return
 			responsePort.postMessage(response.data)
-			masterPort!.removeEventListener('message', callback)
-			res()
+			this.masterPort!.removeEventListener('message', callback)
 		}
-		masterPort!.addEventListener('message', callback)
-		masterPort!.postMessage(command)
-	})
-}
-
-// eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
-;(self as unknown as SharedWorkerGlobalScope).onconnect = function (e) {
-	// shared worker
-	const port = e.ports[0]
-	port.start()
-	port.postMessage({ isMaster: !masterPort })
-	if (!masterPort) {
-		masterPort = port
-	} else {
-		ports.add(port)
+		this.masterPort!.addEventListener('message', callback)
+		this.masterPort!.postMessage(command)
 	}
 
-	port.onmessage = async e => {
-		if (e.data.closing) {
-			ports.delete(port)
-			if (masterPort === port) migrate()
+	private setupConnectionHandler(): void {
+		;(self as unknown as SharedWorkerGlobalScope).onconnect = event => {
+			const port = event.ports[0]
+			port.start()
+			port.postMessage({ isMaster: !this.masterPort })
+			if (!this.masterPort) {
+				this.masterPort = port
+			} else {
+				this.ports.add(port)
+			}
+
+			port.onmessage = async e => this.handlePortMessage(e, port)
+		}
+	}
+
+	private async handlePortMessage(event: MessageEvent, port: MessagePort): Promise<void> {
+		if (event.data.closing) {
+			this.ports.delete(port)
+			if (this.masterPort === port) this.migrateMaster()
 			return
 		}
-		if (masterPort === port) return
-		if (e.data.result || e.data.error) return
-		if (!masterPort) migrate()
-		queryDedicated(e.data, port)
+		if (this.masterPort === port || event.data.result || event.data.error) return
+		if (!this.masterPort) this.migrateMaster()
+		await this.queryMaster(event.data, port)
 	}
 }
+
+new SharedWorkerManager()
