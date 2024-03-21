@@ -45,15 +45,6 @@ function queryDedicated(command: ICommandInputs, responsePort: MessagePort) {
 		if (masterPort === port) return
 		if (e.data.result || e.data.error) return
 		if (!masterPort) migrate()
-		const resultPromise = queryDedicated(e.data, port)
-		const timeoutPromise = new Promise(res => setTimeout(res, 15000, true))
-
-		const shouldMigrate = await Promise.race([resultPromise, timeoutPromise])
-		if (shouldMigrate) {
-			console.warn('Master timed out, migrating...')
-			migrate()
-
-			await queryDedicated(e.data, port)
-		}
+		queryDedicated(e.data, port)
 	}
 }
