@@ -8,7 +8,7 @@ import { IQueryUserKeysParams } from './types'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IUser } from 'src/types'
 import { refetchUserKeys, setImportStatus } from './model'
-import { sendCommand } from './shared'
+import { sendCommand } from 'src/routes/workers/manager'
 
 export const queryUserKeysFx = createEffect(async ({ searchInput, isAnd, limit }: IQueryUserKeysParams) => {
 	if (typeof window === 'undefined') return []

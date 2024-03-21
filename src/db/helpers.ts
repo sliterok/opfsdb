@@ -24,9 +24,9 @@ export class WorkerManager {
 		return this.instance
 	}
 
-	public async sendCommand<Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
+	public sendCommand = async <Command extends ICommandInputs<ReturnType>, ReturnType extends IBasicRecord = IBasicRecord>(
 		command: Command
-	): Promise<ReturnType | ReturnType[] | string[] | void> {
+	): Promise<ReturnType | ReturnType[] | string[] | void> => {
 		const worker = this.getWorker()
 		const channel = new MessageChannel()
 

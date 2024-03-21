@@ -28,9 +28,10 @@ import {
 	setSearchLimit,
 } from './model'
 import { Item } from './Item'
-import { TABLE_HEADER_HEIGHT, batchSize, sendCommand } from './shared'
+import { TABLE_HEADER_HEIGHT, batchSize } from './shared'
 import { Table } from './Table'
 import { loadCsvFileFx, queryUserKeysFx } from './api'
+import { sendCommand } from 'src/routes/workers/manager'
 
 const chance = new Chance()
 
