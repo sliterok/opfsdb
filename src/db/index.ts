@@ -13,7 +13,7 @@ import {
 	IReadManyInput,
 } from './types'
 
-class DatabaseManager {
+export class DatabaseManager {
 	private tables: Record<string, OPFSDB<any>> = {}
 
 	constructor() {}
@@ -84,5 +84,3 @@ class DatabaseManager {
 		drop: cmd => this.drop(cmd as IDropInput),
 	}
 }
-
-export const databaseManager = new DatabaseManager()

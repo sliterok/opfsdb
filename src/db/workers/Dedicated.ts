@@ -1,14 +1,16 @@
 /// <reference lib="webworker" />
 
 import { ICommandInputs } from 'src/db/types'
-import { databaseManager } from 'src/db'
+import { DatabaseManager } from 'src/db'
 
 export class DedicatedWorkerController {
 	private isMaster: boolean = false
 	private masterStarted: Promise<void> | void = undefined
 	private sharedWorkerPort: MessagePort | void = undefined
+	private databaseManager: DatabaseManager
 
 	constructor() {
+		this.databaseManager = new DatabaseManager()
 		this.initializeMessageHandler()
 	}
 
@@ -17,7 +19,7 @@ export class DedicatedWorkerController {
 	}
 
 	private async stopMaster(): Promise<void> {
-		await databaseManager.unloadTables()
+		await this.databaseManager.unloadTables()
 	}
 
 	private initializeMessageHandler(): void {
@@ -66,10 +68,20 @@ export class DedicatedWorkerController {
 	private async handleCommand({ command: payload, port }: { command: ICommandInputs; port: MessagePort }): Promise<void> {
 		await this.masterStarted
 		try {
-			const result = await databaseManager.executeCommand(payload)
+			const result = await this.databaseManager.executeCommand(payload)
 			port.postMessage({ result })
 		} catch (error) {
 			port.postMessage({ error })
+		}
+	}
+
+	private async executeCommand(data: ICommandInputs): Promise<void> {
+		await this.masterStarted
+		try {
+			const result = await this.databaseManager.executeCommand(data)
+			this.sharedWorkerPort!.postMessage({ result })
+		} catch (error) {
+			this.sharedWorkerPort!.postMessage({ error })
 		}
 	}
 
@@ -80,15 +92,5 @@ export class DedicatedWorkerController {
 		}
 		this.sharedWorkerPort!.addEventListener('message', callback)
 		this.sharedWorkerPort!.postMessage(payload)
-	}
-
-	private async executeCommand(data: ICommandInputs): Promise<void> {
-		await this.masterStarted
-		try {
-			const result = await databaseManager.executeCommand(data)
-			this.sharedWorkerPort!.postMessage({ result })
-		} catch (error) {
-			this.sharedWorkerPort!.postMessage({ error })
-		}
 	}
 }
