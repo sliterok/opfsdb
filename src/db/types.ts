@@ -1,6 +1,12 @@
 import { Encoder } from 'cbor-x'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 
+export interface IRecordKey {
+	indexed?: boolean
+	type: 'string' | 'number'
+}
+
+export type ITableKeys = Record<string, IRecordKey>
 export interface IBaseInput {
 	tableName: string
 }
@@ -32,7 +38,7 @@ export interface IQueryInput<T extends IBasicRecord = IBasicRecord> extends IBas
 }
 export interface ICreateTableInput extends IBaseInput {
 	name: 'createTable'
-	keys: string[]
+	keys: ITableKeys
 }
 export interface IDeleteInput extends IBaseInput {
 	name: 'delete'
@@ -69,7 +75,6 @@ export type ICommandInputs<T extends IBasicRecord | never = IBasicRecord> =
 	| IUnloadInput
 
 export type ICommandInput<T extends ICommandInputs> = Omit<T, 'name'>
-export type IFetchCommandInput<T extends ICommandInputs> = Omit<T, 'tableName' | 'name'>
 
 export type IBasicRecord = {
 	id: string

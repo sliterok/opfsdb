@@ -1,12 +1,7 @@
-export interface IRecordKey {
-	indexed?: boolean
-	type: 'string' | 'number'
-}
-
-export type IConfigKeys = Record<string, IRecordKey>
+import { ITableKeys } from 'src/db/types'
 
 export interface IConfig {
-	keys: IConfigKeys
+	keys: ITableKeys
 }
 
 export type ISearchInput = Record<string, string | number>

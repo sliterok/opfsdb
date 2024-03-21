@@ -103,16 +103,10 @@ export default function MainLayout() {
 	})
 
 	const initTable = useMutation(async () => {
-		const keys = Object.entries(config.keys)
-			.filter(([, val]) => val.indexed)
-			.map(([key]) => key)
-
-		console.log({ keys })
-
 		await sendCommand<ICreateTableInput>({
 			name: 'createTable',
 			tableName: 'users',
-			keys,
+			keys: config.keys,
 		})
 	})
 

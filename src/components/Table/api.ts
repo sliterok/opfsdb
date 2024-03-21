@@ -4,8 +4,8 @@
 import Parser from 'papaparse'
 import { createEffect } from 'effector'
 import { sendCommand } from 'src/db/helpers'
-import { ICreateTableInput, IImportInput, IQueryInput } from 'src/db/types'
-import { IConfigKeys, IQueryUserKeysParams } from './types'
+import { ICreateTableInput, IImportInput, IQueryInput, ITableKeys } from 'src/db/types'
+import { IQueryUserKeysParams } from './types'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IUser } from 'src/types'
 import { refetchUserKeys, setImportStatus } from './model'
@@ -41,7 +41,7 @@ const indexBlackListFields = new Set(['Sex'])
 
 export const loadCsvHeaderFx = createEffect(async (file: File | null) => {
 	if (!file) return
-	return new Promise<IConfigKeys>((res, rej) => {
+	return new Promise<ITableKeys>((res, rej) => {
 		Parser.parse(file, {
 			header: true,
 			preview: 1,
@@ -55,7 +55,7 @@ export const loadCsvHeaderFx = createEffect(async (file: File | null) => {
 				sendCommand<ICreateTableInput>({
 					name: 'createTable',
 					tableName: 'users',
-					keys: fields.filter(el => !indexBlackListFields.has(el)),
+					keys,
 				}).then(() => res(keys))
 			},
 		})

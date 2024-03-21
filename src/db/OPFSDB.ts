@@ -1,10 +1,9 @@
 import { Encoder, decode, encode } from 'cbor-x'
 import deepmerge from 'deepmerge'
-import { BPTreeAsync } from 'serializable-bptree'
+import { BPTreeAsync, NumericComparator, StringComparator } from 'serializable-bptree'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
-import { Comparator } from './comparator'
 import { FileStoreStrategy } from './strategy'
-import { IBasicRecord, IEncoder, IQueryOptions } from './types'
+import { IBasicRecord, ITableKeys, IEncoder, IQueryOptions } from './types'
 
 export class OPFSDB<T extends IBasicRecord> {
 	private recordsIndex!: BPTreeAsync<Uint8Array, string>
@@ -13,17 +12,15 @@ export class OPFSDB<T extends IBasicRecord> {
 	private root!: FileSystemDirectoryHandle
 	private recordsRoot!: FileSystemDirectoryHandle
 	private encoder!: IEncoder
-	private keys?: Set<string>
 	private lastIndex!: number
 	private handles = new Map<FileSystemDirectoryHandle, Map<string, FileSystemSyncAccessHandle>>()
 
 	constructor(
 		private tableName: string,
-		keys?: (keyof T)[],
-		private order = 25
-	) {
-		if (keys) this.keys = new Set(keys as string[])
-	}
+		private keys?: ITableKeys,
+		private order = 25,
+		private defaultKey = keys && Object.entries(keys).filter(([, el]) => el.indexed)[0][0]
+	) {}
 
 	async init() {
 		const globalRoot = await navigator.storage.getDirectory()
@@ -48,21 +45,23 @@ export class OPFSDB<T extends IBasicRecord> {
 		const recordsIndexDir = await indexesDir.getDirectoryHandle('records', { create: true })
 		this.recordsIndex = new BPTreeAsync<Uint8Array, string>(
 			new FileStoreStrategy<Uint8Array, string>(70, recordsIndexDir, this.encoder, 'recordsIndex', this),
-			new Comparator()
+			new StringComparator()
 		)
 		await this.recordsIndex.init()
 
 		const holesDir = await indexesDir.getDirectoryHandle('holes', { create: true })
-		this.holesIndex = new BPTreeAsync<number, number>(new FileStoreStrategy(70, holesDir, this.encoder, 'holes', this), new Comparator())
+		this.holesIndex = new BPTreeAsync<number, number>(new FileStoreStrategy(70, holesDir, this.encoder, 'holes', this), new NumericComparator())
 		await this.holesIndex.init()
 
 		const indexInfo = await this.readFile(this.recordsRoot, 'lastIndex', 0, this.encoder)
 		this.lastIndex = indexInfo?.lastIndex || 0
 
-		for (const k of this.keys || []) {
-			const key = k as string
+		for (const key in this.keys || {}) {
+			const { indexed, type } = this.keys![key]
+			if (!indexed) continue
 			const indexDir = await indexesDir.getDirectoryHandle(key, { create: true })
-			const tree = new BPTreeAsync(new FileStoreStrategy<string, string>(this.order, indexDir, this.encoder, key, this), new Comparator())
+			const comparator = type === 'string' ? new StringComparator() : new NumericComparator()
+			const tree = new BPTreeAsync(new FileStoreStrategy<string, string | number>(this.order, indexDir, this.encoder, key, this), comparator)
 			await tree.init()
 
 			this.trees[key as string] = tree
@@ -78,7 +77,7 @@ export class OPFSDB<T extends IBasicRecord> {
 		const start = performance.now()
 		let indexes = new Set<string>()
 		if (!this.keys) throw new Error('query without keys not implemented yet')
-		if (Object.keys(queries).length === 0) queries[this.keys.values().next().value as keyof typeof queries] = { like: '%%' }
+		if (Object.keys(queries).length === 0) queries[this.defaultKey as keyof typeof queries] = { like: '%%' }
 		for (const key in queries) {
 			const tree = this.trees[key]
 			if (!tree) throw new Error('No such index found')
