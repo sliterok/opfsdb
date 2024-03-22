@@ -1,2 +1,2 @@
-export * from './Dedicated'
-export * from './Shared'
+export * from './DedicatedWorkerController'
+export * from './SharedWorkerController'

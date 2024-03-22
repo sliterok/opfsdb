@@ -1,16 +1,65 @@
 {
   "name": "opfsdb",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Origin private file system DB",
   "type": "module",
-  "keywords": ["opfs", "Origin private file system", "opfs-db", "opfsdb", "Origin private file system Database", "in-browser db", "in-browser file db", "in browser database"],
+  "keywords": [
+    "opfs",
+    "Origin private file system",
+    "opfs-db",
+    "opfsdb",
+    "Origin private file system Database",
+    "in-browser db",
+    "in-browser file db",
+    "in browser database"
+  ],
   "homepage": "https://sliterok.github.io/opfs-demo/",
   "repository": {
     "url": "git+https://github.com/sliterok/opfsdb"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./OPFSDB": {
+      "import": "./dist/OPFSDB.js",
+      "require": "./dist/OPFSDB.cjs",
+      "types": "./dist/OPFSDB.d.ts"
+    },
+    "./Strategy": {
+      "import": "./dist/Strategy.js",
+      "require": "./dist/Strategy.cjs",
+      "types": "./dist/Strategy.d.ts"
+    },
+    "./DatabaseManager": {
+      "import": "./dist/DatabaseManager.js",
+      "require": "./dist/DatabaseManager.cjs",
+      "types": "./dist/DatabaseManager.d.ts"
+    },
+    "./WorkerManager": {
+      "import": "./dist/WorkerManager.js",
+      "require": "./dist/WorkerManager.cjs",
+      "types": "./dist/WorkerManager.d.ts"
+    },
+    "./workers/DedicatedWorkerController": {
+      "import": "./dist/workers/DedicatedWorkerController.js",
+      "require": "./dist/workers/DedicatedWorkerController.cjs",
+      "types": "./dist/workers/DedicatedWorkerController.d.ts"
+    },
+    "./workers/SharedWorkerController": {
+      "import": "./dist/workers/SharedWorkerController.js",
+      "require": "./dist/workers/SharedWorkerController.cjs",
+      "types": "./dist/workers/SharedWorkerController.d.ts"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

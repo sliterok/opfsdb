@@ -6,15 +6,15 @@ export class WorkerManager {
 
 	constructor(
 		private workerUrl: string,
-		private sharedWorkerUrl: string
+		private sharedWorkerUrl: string,
+		private mode: 'classic' | 'module' = 'module'
 	) {}
 
 	public getWorker(): Worker {
 		if (!this.instance) {
-			const type = import.meta.env.MODE === 'production' ? 'classic' : 'module'
-			const sharedWorker = new SharedWorker(this.sharedWorkerUrl, { type })
+			const sharedWorker = new SharedWorker(this.sharedWorkerUrl, { type: this.mode })
 
-			this.instance = new Worker(this.workerUrl, { type })
+			this.instance = new Worker(this.workerUrl, { type: this.mode })
 			this.instance.postMessage({ workerPort: sharedWorker.port }, [sharedWorker.port])
 
 			window.addEventListener('beforeunload', () => {
