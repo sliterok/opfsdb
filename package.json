@@ -1,6 +1,6 @@
 {
   "name": "opfsdb",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Origin private file system DB",
   "type": "module",
   "keywords": [
@@ -49,15 +49,10 @@
       "require": "./dist/WorkerManager.cjs",
       "types": "./dist/WorkerManager.d.ts"
     },
-    "./workers/DedicatedWorkerController": {
-      "import": "./dist/workers/DedicatedWorkerController.js",
-      "require": "./dist/workers/DedicatedWorkerController.cjs",
-      "types": "./dist/workers/DedicatedWorkerController.d.ts"
-    },
-    "./workers/SharedWorkerController": {
-      "import": "./dist/workers/SharedWorkerController.js",
-      "require": "./dist/workers/SharedWorkerController.cjs",
-      "types": "./dist/workers/SharedWorkerController.d.ts"
+    "./workers/*": {
+      "import": "./dist/workers/*.js",
+      "require": "./dist/workers/*.cjs",
+      "types": "./dist/workers/*.d.ts"
     }
   },
   "scripts": {
