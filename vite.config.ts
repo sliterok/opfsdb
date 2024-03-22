@@ -1,21 +1,18 @@
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import react from '@vitejs/plugin-react-swc'
-import rakkas from 'rakkasjs/vite-plugin'
+import dts from 'vite-plugin-dts'
+import { externalizeDeps } from 'vite-plugin-externalize-deps'
 import path from 'path'
 
 export default defineConfig({
-	resolve: {
-		alias: [
-			{ find: 'buffer', replacement: path.resolve(__dirname, 'src', 'buffer') },
-			{ find: 'lib', replacement: path.resolve(__dirname, 'lib', 'index') },
-		],
+	build: {
+		sourcemap: true,
+		lib: {
+			entry: path.resolve(__dirname, 'lib', 'index'),
+			name: 'OPFSDB',
+			fileName: 'index',
+			formats: ['es'],
+		},
 	},
-	plugins: [
-		tsconfigPaths(),
-		react(),
-		rakkas({
-			prerender: true,
-		}),
-	],
+	plugins: [tsconfigPaths(), externalizeDeps(), dts({ include: 'lib' })],
 })
