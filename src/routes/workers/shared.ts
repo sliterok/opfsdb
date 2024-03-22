@@ -1,3 +1,3 @@
-import { SharedWorkerController } from 'src/db/workers/Shared'
+import { SharedWorkerController } from 'lib'
 
 new SharedWorkerController()

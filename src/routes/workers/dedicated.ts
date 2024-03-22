@@ -1,3 +1,3 @@
-import { DedicatedWorkerController } from 'src/db/workers/Dedicated'
+import { DedicatedWorkerController } from 'lib'
 
 new DedicatedWorkerController()

@@ -2,7 +2,7 @@ import { Encoder, decode, encode } from 'cbor-x'
 import deepmerge from 'deepmerge'
 import { BPTreeAsync, NumericComparator, StringComparator } from 'serializable-bptree'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
-import { FileStoreStrategy } from './strategy'
+import { FileStoreStrategy } from './Strategy'
 import { IBasicRecord, ITableKeys, IEncoder, IQueryOptions } from './types'
 
 export class OPFSDB<T extends IBasicRecord> {

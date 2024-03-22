@@ -1,4 +1,4 @@
-import { ITableKeys } from 'src/db/types'
+import { ITableKeys } from 'lib'
 
 export interface IConfig {
 	keys: ITableKeys

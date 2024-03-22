@@ -2,7 +2,7 @@
 /* eslint-disable react/display-name */
 import { ClientSuspense, useMutation } from 'rakkasjs'
 import { ComponentType, Suspense, forwardRef, lazy, useMemo } from 'react'
-import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IReadManyInput } from 'src/db/types'
+import { ICreateTableInput, IDropInput, IImportInput, IInsertInput, IReadManyInput } from 'lib'
 import { IUser } from 'src/types'
 import Chance from 'chance'
 import { styled } from 'styled-components'

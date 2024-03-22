@@ -1,4 +1,4 @@
-import { ICommandInputs } from 'src/db/types'
+import { ICommandInputs } from '../types'
 
 export class SharedWorkerController {
 	private ports: Set<MessagePort> = new Set()

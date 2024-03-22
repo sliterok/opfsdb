@@ -1,7 +1,6 @@
 /// <reference lib="webworker" />
-
-import { ICommandInputs } from 'src/db/types'
-import { DatabaseManager } from 'src/db'
+import { DatabaseManager } from '../DatabaseManager'
+import { ICommandInputs } from '../types'
 
 export class DedicatedWorkerController {
 	private isMaster: boolean = false

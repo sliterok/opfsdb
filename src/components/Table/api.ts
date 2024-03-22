@@ -3,7 +3,7 @@
 /* eslint-disable import/no-named-as-default-member */
 import Parser from 'papaparse'
 import { createEffect } from 'effector'
-import { ICreateTableInput, IImportInput, IQueryInput, ITableKeys } from 'src/db/types'
+import { ICreateTableInput, IImportInput, IQueryInput, ITableKeys } from 'lib'
 import { IQueryUserKeysParams } from './types'
 import { BPTreeCondition } from 'serializable-bptree/dist/typings/base/BPTree'
 import { IUser } from 'src/types'

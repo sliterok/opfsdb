@@ -1,0 +1,6 @@
+export * from './DatabaseManager'
+export * from './OPFSDB'
+export * from './Strategy'
+export * from './types'
+export * from './WorkerManager'
+export * from './workers'
