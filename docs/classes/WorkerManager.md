@@ -40,7 +40,7 @@
 
 #### Defined in
 
-[lib/WorkerManager.ts:7](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L7)
+[lib/WorkerManager.ts:7](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L7)
 
 ## Properties
 
@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[lib/WorkerManager.ts:5](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L5)
+[lib/WorkerManager.ts:5](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L5)
 
 ___
 
@@ -60,7 +60,7 @@ ___
 
 #### Defined in
 
-[lib/WorkerManager.ts:10](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L10)
+[lib/WorkerManager.ts:10](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L10)
 
 ___
 
@@ -70,7 +70,7 @@ ___
 
 #### Defined in
 
-[lib/WorkerManager.ts:9](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L9)
+[lib/WorkerManager.ts:9](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L9)
 
 ___
 
@@ -80,7 +80,7 @@ ___
 
 #### Defined in
 
-[lib/WorkerManager.ts:8](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L8)
+[lib/WorkerManager.ts:8](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L8)
 
 ## Methods
 
@@ -94,7 +94,7 @@ ___
 
 #### Defined in
 
-[lib/WorkerManager.ts:13](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L13)
+[lib/WorkerManager.ts:13](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L13)
 
 ___
 
@@ -121,4 +121,4 @@ ___
 
 #### Defined in
 
-[lib/WorkerManager.ts:27](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/WorkerManager.ts#L27)
+[lib/WorkerManager.ts:27](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/WorkerManager.ts#L27)

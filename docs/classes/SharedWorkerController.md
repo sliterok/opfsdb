@@ -32,7 +32,7 @@
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:7](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L7)
+[lib/workers/SharedWorkerController.ts:7](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L7)
 
 ## Properties
 
@@ -42,7 +42,7 @@
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:5](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L5)
+[lib/workers/SharedWorkerController.ts:5](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L5)
 
 ___
 
@@ -52,7 +52,7 @@ ___
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:4](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L4)
+[lib/workers/SharedWorkerController.ts:4](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L4)
 
 ## Methods
 
@@ -73,7 +73,7 @@ ___
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:44](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L44)
+[lib/workers/SharedWorkerController.ts:44](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L44)
 
 ___
 
@@ -87,7 +87,7 @@ ___
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:11](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L11)
+[lib/workers/SharedWorkerController.ts:11](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L11)
 
 ___
 
@@ -108,7 +108,7 @@ ___
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:19](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L19)
+[lib/workers/SharedWorkerController.ts:19](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L19)
 
 ___
 
@@ -122,4 +122,4 @@ ___
 
 #### Defined in
 
-[lib/workers/SharedWorkerController.ts:29](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/SharedWorkerController.ts#L29)
+[lib/workers/SharedWorkerController.ts:29](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/SharedWorkerController.ts#L29)

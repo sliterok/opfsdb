@@ -39,7 +39,7 @@
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:11](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L11)
+[lib/workers/DedicatedWorkerController.ts:11](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L11)
 
 ## Properties
 
@@ -49,7 +49,7 @@
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:9](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L9)
+[lib/workers/DedicatedWorkerController.ts:9](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L9)
 
 ___
 
@@ -59,7 +59,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:6](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L6)
+[lib/workers/DedicatedWorkerController.ts:6](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L6)
 
 ___
 
@@ -69,7 +69,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:7](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L7)
+[lib/workers/DedicatedWorkerController.ts:7](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L7)
 
 ___
 
@@ -79,7 +79,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:8](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L8)
+[lib/workers/DedicatedWorkerController.ts:8](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L8)
 
 ## Methods
 
@@ -99,7 +99,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:77](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L77)
+[lib/workers/DedicatedWorkerController.ts:77](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L77)
 
 ___
 
@@ -113,7 +113,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:45](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L45)
+[lib/workers/DedicatedWorkerController.ts:45](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L45)
 
 ___
 
@@ -135,7 +135,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:67](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L67)
+[lib/workers/DedicatedWorkerController.ts:67](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L67)
 
 ___
 
@@ -155,7 +155,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:56](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L56)
+[lib/workers/DedicatedWorkerController.ts:56](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L56)
 
 ___
 
@@ -169,7 +169,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:24](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L24)
+[lib/workers/DedicatedWorkerController.ts:24](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L24)
 
 ___
 
@@ -191,7 +191,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:87](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L87)
+[lib/workers/DedicatedWorkerController.ts:87](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L87)
 
 ___
 
@@ -211,7 +211,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:50](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L50)
+[lib/workers/DedicatedWorkerController.ts:50](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L50)
 
 ___
 
@@ -225,7 +225,7 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:16](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L16)
+[lib/workers/DedicatedWorkerController.ts:16](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L16)
 
 ___
 
@@ -239,4 +239,4 @@ ___
 
 #### Defined in
 
-[lib/workers/DedicatedWorkerController.ts:20](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/workers/DedicatedWorkerController.ts#L20)
+[lib/workers/DedicatedWorkerController.ts:20](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/workers/DedicatedWorkerController.ts#L20)

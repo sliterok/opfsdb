@@ -17,7 +17,7 @@
 
 #### Defined in
 
-[lib/types.ts:5](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/types.ts#L5)
+[lib/types.ts:5](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L5)
 
 ___
 
@@ -27,4 +27,4 @@ ___
 
 #### Defined in
 
-[lib/types.ts:6](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/types.ts#L6)
+[lib/types.ts:6](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L6)

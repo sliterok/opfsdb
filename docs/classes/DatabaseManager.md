@@ -38,7 +38,7 @@
 
 #### Defined in
 
-[lib/DatabaseManager.ts:19](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L19)
+[lib/DatabaseManager.ts:19](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L19)
 
 ## Properties
 
@@ -48,7 +48,7 @@
 
 #### Defined in
 
-[lib/DatabaseManager.ts:76](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L76)
+[lib/DatabaseManager.ts:76](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L76)
 
 ___
 
@@ -58,7 +58,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:17](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L17)
+[lib/DatabaseManager.ts:17](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L17)
 
 ## Methods
 
@@ -78,7 +78,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:21](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L21)
+[lib/DatabaseManager.ts:21](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L21)
 
 ___
 
@@ -98,7 +98,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:40](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L40)
+[lib/DatabaseManager.ts:40](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L40)
 
 ___
 
@@ -118,7 +118,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:52](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L52)
+[lib/DatabaseManager.ts:52](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L52)
 
 ___
 
@@ -144,7 +144,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:63](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L63)
+[lib/DatabaseManager.ts:63](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L63)
 
 ___
 
@@ -170,7 +170,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:36](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L36)
+[lib/DatabaseManager.ts:36](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L36)
 
 ___
 
@@ -196,7 +196,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:32](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L32)
+[lib/DatabaseManager.ts:32](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L32)
 
 ___
 
@@ -222,7 +222,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:28](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L28)
+[lib/DatabaseManager.ts:28](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L28)
 
 ___
 
@@ -248,7 +248,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:44](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L44)
+[lib/DatabaseManager.ts:44](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L44)
 
 ___
 
@@ -274,7 +274,7 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:48](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L48)
+[lib/DatabaseManager.ts:48](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L48)
 
 ___
 
@@ -288,4 +288,4 @@ ___
 
 #### Defined in
 
-[lib/DatabaseManager.ts:58](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/DatabaseManager.ts#L58)
+[lib/DatabaseManager.ts:58](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/DatabaseManager.ts#L58)

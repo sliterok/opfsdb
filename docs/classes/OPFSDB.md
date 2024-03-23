@@ -75,7 +75,7 @@
 
 #### Defined in
 
-[lib/OPFSDB.ts:18](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L18)
+[lib/OPFSDB.ts:18](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L18)
 
 ## Properties
 
@@ -85,7 +85,7 @@
 
 #### Defined in
 
-[lib/OPFSDB.ts:22](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L22)
+[lib/OPFSDB.ts:22](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L22)
 
 ___
 
@@ -95,7 +95,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:14](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L14)
+[lib/OPFSDB.ts:14](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L14)
 
 ___
 
@@ -105,7 +105,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:16](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L16)
+[lib/OPFSDB.ts:16](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L16)
 
 ___
 
@@ -115,7 +115,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:10](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L10)
+[lib/OPFSDB.ts:10](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L10)
 
 ___
 
@@ -125,7 +125,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:20](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L20)
+[lib/OPFSDB.ts:20](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L20)
 
 ___
 
@@ -135,7 +135,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:15](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L15)
+[lib/OPFSDB.ts:15](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L15)
 
 ___
 
@@ -145,7 +145,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:21](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L21)
+[lib/OPFSDB.ts:21](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L21)
 
 ___
 
@@ -155,7 +155,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:9](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L9)
+[lib/OPFSDB.ts:9](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L9)
 
 ___
 
@@ -165,7 +165,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:13](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L13)
+[lib/OPFSDB.ts:13](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L13)
 
 ___
 
@@ -175,7 +175,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:12](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L12)
+[lib/OPFSDB.ts:12](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L12)
 
 ___
 
@@ -185,7 +185,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:19](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L19)
+[lib/OPFSDB.ts:19](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L19)
 
 ___
 
@@ -195,7 +195,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:11](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L11)
+[lib/OPFSDB.ts:11](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L11)
 
 ## Methods
 
@@ -217,7 +217,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:139](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L139)
+[lib/OPFSDB.ts:139](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L139)
 
 ___
 
@@ -239,7 +239,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:278](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L278)
+[lib/OPFSDB.ts:278](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L278)
 
 ___
 
@@ -259,7 +259,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:300](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L300)
+[lib/OPFSDB.ts:300](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L300)
 
 ___
 
@@ -280,7 +280,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:242](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L242)
+[lib/OPFSDB.ts:242](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L242)
 
 ___
 
@@ -294,7 +294,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:258](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L258)
+[lib/OPFSDB.ts:258](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L258)
 
 ___
 
@@ -315,7 +315,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:296](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L296)
+[lib/OPFSDB.ts:296](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L296)
 
 ___
 
@@ -335,7 +335,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:130](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L130)
+[lib/OPFSDB.ts:130](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L130)
 
 ___
 
@@ -355,7 +355,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:149](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L149)
+[lib/OPFSDB.ts:149](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L149)
 
 ___
 
@@ -369,7 +369,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:25](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L25)
+[lib/OPFSDB.ts:25](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L25)
 
 ___
 
@@ -391,7 +391,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:175](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L175)
+[lib/OPFSDB.ts:175](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L175)
 
 ___
 
@@ -412,7 +412,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:71](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L71)
+[lib/OPFSDB.ts:71](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L71)
 
 ___
 
@@ -432,7 +432,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:122](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L122)
+[lib/OPFSDB.ts:122](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L122)
 
 ___
 
@@ -456,7 +456,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:305](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L305)
+[lib/OPFSDB.ts:305](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L305)
 
 ___
 
@@ -476,7 +476,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:109](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L109)
+[lib/OPFSDB.ts:109](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L109)
 
 ___
 
@@ -490,7 +490,7 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:268](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L268)
+[lib/OPFSDB.ts:268](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L268)
 
 ___
 
@@ -515,4 +515,4 @@ ___
 
 #### Defined in
 
-[lib/OPFSDB.ts:341](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/OPFSDB.ts#L341)
+[lib/OPFSDB.ts:341](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/OPFSDB.ts#L341)

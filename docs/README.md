@@ -91,25 +91,21 @@ workerManager
 
 ### Shared Worker
 
-The Shared Worker acts as a communication channel between the main thread and the Web Workers. It receives commands from the main thread and distributes them to the appropriate Web Workers for execution.
-
+The Shared Worker acts as a communication channel between different Web Workers. It connects with each Web Worker and tracks the master one, when one of the slave Web Workers receives a command from the Main Thread, it will communicate with the master Web Worker through the Shared Web Worker.  
 You can create a new Shared Worker file (`shared-worker.js`) and import the `SharedWorkerController` class from OPFSDB:
 
 ```javascript
 import { SharedWorkerController } from 'opfsdb/workers/SharedWorkerController'
-
 const sharedWorkerController = new SharedWorkerController()
 ```
 
 ### Web Worker
 
-The Web Workers handle the actual execution of database operations. They receive commands from the Shared Worker, execute them, and return the results.
-
+The Web Workers handle the actual execution of commands. They receive commands from the Main thread and, depending on whether it's the master Worker or not, they will either execute the command and return the results or send the command to the Shared Worker.  
 You can create a new Web Worker file (`worker.js`) and import the `DedicatedWorkerController` class from OPFSDB:
 
 ```javascript
 import { DedicatedWorkerController } from 'opfsdb/workers/DedicatedWorkerController'
-
 const dedicatedWorkerController = new DedicatedWorkerController()
 ```
 

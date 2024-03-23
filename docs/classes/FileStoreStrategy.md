@@ -78,7 +78,7 @@ SerializeStrategyAsync\&lt;K, V\&gt;.constructor
 
 #### Defined in
 
-[lib/Strategy.ts:9](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L9)
+[lib/Strategy.ts:9](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L9)
 
 ## Properties
 
@@ -88,7 +88,7 @@ SerializeStrategyAsync\&lt;K, V\&gt;.constructor
 
 #### Defined in
 
-[lib/Strategy.ts:12](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L12)
+[lib/Strategy.ts:12](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L12)
 
 ___
 
@@ -112,7 +112,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:13](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L13)
+[lib/Strategy.ts:13](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L13)
 
 ___
 
@@ -122,7 +122,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:6](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L6)
+[lib/Strategy.ts:6](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L6)
 
 ___
 
@@ -146,7 +146,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:15](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L15)
+[lib/Strategy.ts:15](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L15)
 
 ___
 
@@ -156,7 +156,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:14](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L14)
+[lib/Strategy.ts:14](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L14)
 
 ___
 
@@ -166,7 +166,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:11](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L11)
+[lib/Strategy.ts:11](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L11)
 
 ___
 
@@ -176,7 +176,7 @@ ___
 
 #### Defined in
 
-[lib/Strategy.ts:7](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L7)
+[lib/Strategy.ts:7](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L7)
 
 ## Methods
 
@@ -244,7 +244,7 @@ SerializeStrategyAsync.id
 
 #### Defined in
 
-[lib/Strategy.ts:20](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L20)
+[lib/Strategy.ts:20](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L20)
 
 ___
 
@@ -268,7 +268,7 @@ SerializeStrategyAsync.read
 
 #### Defined in
 
-[lib/Strategy.ts:24](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L24)
+[lib/Strategy.ts:24](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L24)
 
 ___
 
@@ -286,7 +286,7 @@ SerializeStrategyAsync.readHead
 
 #### Defined in
 
-[lib/Strategy.ts:33](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L33)
+[lib/Strategy.ts:33](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L33)
 
 ___
 
@@ -336,7 +336,7 @@ SerializeStrategyAsync.write
 
 #### Defined in
 
-[lib/Strategy.ts:29](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L29)
+[lib/Strategy.ts:29](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L29)
 
 ___
 
@@ -360,4 +360,4 @@ SerializeStrategyAsync.writeHead
 
 #### Defined in
 
-[lib/Strategy.ts:42](https://github.com/sliterok/opfsdb/blob/96fe35f/lib/Strategy.ts#L42)
+[lib/Strategy.ts:42](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/Strategy.ts#L42)
