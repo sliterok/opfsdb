@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[lib/types.ts:15](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L15)
+[lib/types.ts:15](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L15)

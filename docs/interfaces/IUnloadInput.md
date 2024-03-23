@@ -16,4 +16,4 @@
 
 #### Defined in
 
-[lib/types.ts:63](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L63)
+[lib/types.ts:63](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L63)

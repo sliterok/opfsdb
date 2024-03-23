@@ -23,7 +23,7 @@
 
 #### Defined in
 
-[lib/types.ts:59](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L59)
+[lib/types.ts:59](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L59)
 
 ___
 
@@ -37,4 +37,4 @@ ___
 
 #### Defined in
 
-[lib/types.ts:11](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L11)
+[lib/types.ts:11](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L11)

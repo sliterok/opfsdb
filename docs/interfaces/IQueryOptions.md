@@ -24,7 +24,7 @@
 
 #### Defined in
 
-[lib/types.ts:28](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L28)
+[lib/types.ts:28](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L28)
 
 ___
 
@@ -34,7 +34,7 @@ ___
 
 #### Defined in
 
-[lib/types.ts:30](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L30)
+[lib/types.ts:30](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L30)
 
 ___
 
@@ -44,4 +44,4 @@ ___
 
 #### Defined in
 
-[lib/types.ts:29](https://github.com/sliterok/opfsdb/blob/bc134c9/lib/types.ts#L29)
+[lib/types.ts:29](https://github.com/sliterok/opfsdb/blob/dev/lib/types.ts#L29)

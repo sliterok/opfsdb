@@ -4,6 +4,8 @@ opfsdb / [Exports](modules.md)
 
 OPFSDB (Origin Private File System Database) is a TypeScript library that provides a lightweight and efficient in-browser database solution using the File System Access API and Web Workers. It utilizes the B+ Tree data structure from the [serializable-bptree](https://github.com/izure1/serializable-bptree) library for indexing and querying data, allowing for fast and scalable storage and retrieval of records.
 
+You can find demo with table for data browsing and querying [here](https://sliterok.github.io/opfs-demo/). You can also load custom CSV file but for now "id" is required column.
+
 ## Table of Contents
 
 -   [Features](#features)
