@@ -64,9 +64,9 @@ workerManager.sendCommand({
 	name: 'createTable',
 	tableName: 'users',
 	keys: {
-		id: { type: 'string', indexed: true },
-		name: { type: 'string' },
-		age: { type: 'number' },
+		id: { type: 'string' },
+		name: { type: 'string', indexed: true },
+		age: { type: 'number', indexed: true },
 	},
 })
 
@@ -82,7 +82,7 @@ workerManager
 	.sendCommand({
 		name: 'query',
 		tableName: 'users',
-		query: { age: { $gte: 25 } },
+		query: { age: { gte: 25 }, name: { like: 'John%' } },
 	})
 	.then(results => {
 		console.log('Query results:', results)
