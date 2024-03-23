@@ -1,6 +1,6 @@
 {
   "name": "opfsdb",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Origin private file system DB",
   "type": "module",
   "keywords": [
